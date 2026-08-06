@@ -1,5 +1,6 @@
-import Sidebar from "../components/dashboard/Sidebar";
-import Navbar from "../components/dashboard/Navbar";
+
+import Footer from "../components/Home/Footer.jsx";
+import Navbar from "../components/Home/Navbar.jsx";
 
 import AskHero from "../components/ask/AskHero";
 import ChatBox from "../components/ask/ChatBox";
@@ -10,9 +11,9 @@ export default function AskPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       
-      <Sidebar />
+      
 
-      <div className="lg:ml-64 min-h-screen flex flex-col">
+      <div className="">
        
         <Navbar />
 
@@ -45,8 +46,10 @@ export default function AskPage() {
             </div>
 
           </div>
+          
         </main>
       </div>
+      <Footer />
     </div>
   );
 }

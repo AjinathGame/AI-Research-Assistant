@@ -1,19 +1,19 @@
-import Navbar from "../components/dashboard/Navbar.jsx";
-import Sidebar from "../components/dashboard/Sidebar.jsx";
+import Navbar from "../components/Home/Navbar.jsx";
+
 
 import UploadHero from "../components/upload/UploadHero.jsx";
 import DragDropUpload from "../components/upload/DragDropUpload.jsx";
 import UploadSettings from "../components/upload/UploadSettings.jsx";
 import RecentUploadsTable from "../components/upload/RecentUploadsTable.jsx";
+import Footer from "../components/Home/Footer.jsx";
 
 export default function UploadPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-    
-      <Sidebar />
+
 
      
-      <div className="lg:ml-64 min-h-screen flex flex-col">
+      <div className="">
        
         <Navbar />
 
@@ -32,9 +32,13 @@ export default function UploadPage() {
             <div className="mt-8">
               <RecentUploadsTable />
             </div>
+            <div className="">
+              
+            </div>
           </div>
         </main>
       </div>
+      <Footer/>
     </div>
   );
 }

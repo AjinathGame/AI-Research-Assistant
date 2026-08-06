@@ -1,16 +1,16 @@
-import Sidebar from "../components/dashboard/Sidebar.jsx";
-import Navbar from "../components/dashboard/Navbar.jsx";
+
+import Navbar from "../components/Home/Navbar.jsx";
 import HeroSection from "../components/dashboard/HeroSection.jsx";
 import TechnologyGrid from "../components/dashboard/TechnologyGrid.jsx";
-
+import Footer from "../components/Home/Footer.jsx";
 export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
      
-      <Sidebar />
+  
 
       
-      <div className="lg:ml-64 min-h-screen flex flex-col">
+      <div className="">
      
         <Navbar />
 
@@ -19,6 +19,7 @@ export default function Dashboard() {
           <HeroSection />
           <TechnologyGrid />
         </main>
+        <Footer />
       </div>
     </div>
   );
