@@ -3,9 +3,10 @@ import {
     Brain, Bot, Wifi, Globe, ChartColumn, SquareCheckBig, SquarePen, Heart, ArrowUpRight, Home, LayoutDashboard, MessageSquare, Upload, Info, LogIn, Lock,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import Logo from '../../assets/main_logo.png'
 
 const Footer = () => {
-    
+
     return (
         <footer className="bg-white border-t border-gray-200 pt-16 pb-12 rounded-t-md ">
 
@@ -16,24 +17,28 @@ const Footer = () => {
                     <div className="lg:col-span-2 space-y-4">
 
                         <div className="flex items-center gap-3 cursor-pointer">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl font-bold shadow-md">
-
+                            <div className="w-16 h-12 rounded-xl  flex items-center justify-center text-white text-xl font-bold">
+                                <img
+                                    src={Logo}
+                                    alt="Hero"
+                                    className="w-full"
+                                />
                             </div>
                             <div>
-                                <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
-                                    Scholar RAG
+                                <h2 className="text-2xl font-bold text-black tracking-tight">
+                                    AI Research Assistant
                                 </h2>
-                                <p className="text-[15px] font-serif text-gray-700">
-                                    Retrieval Augmented Generation
+                                <p className="text-[15px] font-bold font-bold">
+                                    Ask. Learn. Discover.
                                 </p>
                             </div>
                         </div>
 
-                        <p className="text-gray-600 text-sm leading-relaxed font-serif max-w-sm ">
-                            Your intelligent research library. Upload chapter-wise<br/> PDFs, ask questions in plain English, and get grounded answers with exact source page numbers.
+                        <p className="text-gray-600 text-sm leading-relaxed font-serif max-w-sm ml-3 ">
+                            Your intelligent research library. Upload chapter-wise<br /> PDFs, ask questions in plain English, and get grounded answers with exact source page numbers.
                         </p>
 
-                        <div className="flex items-center gap-2 pt-2">
+                        <div className="flex items-center gap-2 pt-2 ml-3">
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-semibold">
                                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                                 System Operational
@@ -72,9 +77,9 @@ const Footer = () => {
                                 </Link>
                             </li>
                             <li>
-                                <Link to="/About" className="text-gray-600 hover:text-indigo-600 transition flex items-center gap-1">
+                                <Link to="/Ask" className="text-gray-600 hover:text-indigo-600 transition flex items-center gap-1">
                                     <Info size={14} className="text-indigo-600" />
-                                    About Us
+                                    Chat With
                                 </Link>
                             </li>
                         </ul>
@@ -135,11 +140,11 @@ const Footer = () => {
 
                 <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[14px] text-gray-600 font-bold">
 
-                    <p>© {new Date().getFullYear()} Scholar RAG System. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} AI Research Assistant. All rights reserved.</p>
                     <p className="flex items-center gap-1">
                         Built with <Heart size={14} className="text-red-500 fill-red-500" /> for researchers & students.
                     </p>
-                    
+
                     <div className="flex items-center gap-2 px-5 py-3 rounded-xl border border-cyan-400/20 bg-white shadow-md cursor-pointer">
 
                         <Lock
@@ -156,7 +161,7 @@ const Footer = () => {
                 </div>
 
             </div>
-            
+
         </footer>
     );
 };
