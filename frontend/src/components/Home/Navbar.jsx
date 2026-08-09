@@ -61,9 +61,9 @@ const Navbar = () => {
             Upload
           </Link>
 
-          <Link to="/Ask" className="flex items-center gap-2 font-semibold hover:text-indigo-600 transition">
+          <Link to="/About" className="flex items-center gap-2 font-semibold hover:text-indigo-600 transition">
             <Info size={18} />
-            Chat With
+            About US
           </Link>
 
         </div>

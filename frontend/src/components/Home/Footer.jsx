@@ -26,10 +26,10 @@ const Footer = () => {
                 <div className='h-auto w-auto flex flex-col justify-center gap-1 md:w-auto mt-6'>
                     <h1 className='font-bold text-white text-[25px]'>Navigation</h1>
                     <Link to="/" className='text-white text-[15px]  hover:text-purple-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><Home size={14} className="text-indigo-600" />Home</Link>
-                    <Link to="/build-resume" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><LayoutDashboard size={14} className="text-indigo-600" />Dashboard</Link>
-                    <Link to="/Login" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><MessageSquare size={14} className="text-indigo-600" />Ask AI</Link>
-                    <Link to="/Contact" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'> <Upload size={14} className="text-indigo-600" /> Upload</Link>
-                    <Link to="/Contact" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><Info size={14} className="text-indigo-600" /> Chat With</Link>
+                    <Link to="/Dashboard" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><LayoutDashboard size={14} className="text-indigo-600" />Dashboard</Link>
+                    <Link to="/Ask" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><MessageSquare size={14} className="text-indigo-600" />Ask AI</Link>
+                    <Link to="/Uploads" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'> <Upload size={14} className="text-indigo-600" /> Upload</Link>
+                    <Link to="/About" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><Info size={14} className="text-indigo-600" /> About US</Link>
                 </div>
 
                 <div className='h-auto w-auto md:w-auto mt-6'>
