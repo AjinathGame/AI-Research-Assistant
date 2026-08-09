@@ -15,7 +15,7 @@ export default function Dashboard() {
         <Navbar />
 
      
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 lg:pl-28 lg:pr-28">
           <HeroSection />
           <TechnologyGrid />
         </main>
