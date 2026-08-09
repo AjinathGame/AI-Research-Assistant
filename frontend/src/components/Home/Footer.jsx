@@ -1,169 +1,70 @@
-import React from "react";
+import React from 'react'
+import LOGO from '../../assets/main_logo.png'
 import {
     Brain, Bot, Wifi, Globe, ChartColumn, SquareCheckBig, SquarePen, Heart, ArrowUpRight, Home, LayoutDashboard, MessageSquare, Upload, Info, LogIn, Lock,
 } from "lucide-react";
-import { Link } from "react-router-dom";
-import Logo from '../../assets/main_logo.png'
+import { Link, BrowserRouter } from "react-router-dom";
 
 const Footer = () => {
-
     return (
-        <footer className="bg-white border-t border-gray-200 pt-16 pb-12 rounded-t-md ">
-
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 ">
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 pb-12 border-b border-gray-100">
-
-                    <div className="lg:col-span-2 space-y-4">
-
-                        <div className="flex items-center gap-3 cursor-pointer">
-                            <div className="w-16 h-12 rounded-xl  flex items-center justify-center text-white text-xl font-bold">
-                                <img
-                                    src={Logo}
-                                    alt="Hero"
-                                    className="w-full"
-                                />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-black tracking-tight">
-                                    AI Research Assistant
-                                </h2>
-                                <p className="text-[15px] font-bold font-bold">
-                                    Ask. Learn. Discover.
-                                </p>
-                            </div>
-                        </div>
-
-                        <p className="text-gray-600 text-sm leading-relaxed font-serif max-w-sm ml-3 ">
-                            Your intelligent research library. Upload chapter-wise<br /> PDFs, ask questions in plain English, and get grounded answers with exact source page numbers.
-                        </p>
-
-                        <div className="flex items-center gap-2 pt-2 ml-3">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-semibold">
-                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                                System Operational
-                            </span>
-                        </div>
-
+        <>
+            <div className='h-auto w-full bg-black border-t-4 border-indigo-600 rounded-tr-md rounded-tl-md flex flex-col md:flex-row items-start justify-center  md:gap-2 lg:gap-20  mt-10 p-8 md:h-[350px]'>
+                <div className='h-[150px] w-[150px] bg-transparent rounded-full overflow-hidden mt-6'>
+                    <img src={LOGO} alt='logo' className='h-[100%] w-[100%] rounded-full '></img>
+                </div>
+                <div className='h-auto w-full md:w-[350px] text-center md:text-left leading-8 mt-6'>
+                    <h1 className='font-bold text-white text-[30px] '>AI-Research Assistant</h1>
+                    <p className='text-gray-200 leading-5 mt-4 text-[14px]'>"Your intelligent research library. Upload chapter<br /> wise PDFs, ask questions in plain English, and<br /> get grounded answers with exact source<br /> page numbers."</p>
+                    <div className="flex items-center gap-2 pt-2 mt-4 lg:flex">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-green-50 border border-green-200 text-green-700 text-xs font-semibold">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            System Operational
+                        </span>
                     </div>
-
-                    <div>
-                        <h3 className="text-[17px] font-bold text-gray-900 tracking-wider uppercase mb-4">
-                            Navigation
-                        </h3>
-                        <ul className="space-y-3 text-[15px]">
-                            <li>
-                                <Link to="/" className="text-gray-600 hover:text-indigo-600 transition flex items-center gap-1">
-                                    <Home size={14} className="text-indigo-600" />
-                                    Home
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/Dashboard" className="text-gray-600 hover:text-indigo-600 transition flex items-center gap-1">
-                                    <LayoutDashboard size={14} className="text-indigo-600" />
-                                    Dashboard
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/Ask" className="text-gray-600 hover:text-indigo-600 transition flex items-center gap-1">
-                                    <MessageSquare size={14} className="text-indigo-600" />
-                                    Ask AI
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/Upload" className="text-gray-600 hover:text-indigo-600 transition flex items-center gap-1">
-                                    <Upload size={14} className="text-indigo-600" />
-                                    Upload Notes
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/Ask" className="text-gray-600 hover:text-indigo-600 transition flex items-center gap-1">
-                                    <Info size={14} className="text-indigo-600" />
-                                    Chat With
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h3 className="text-[17px] font-bold text-gray-900 tracking-wider uppercase mb-4">
-                            Domains
-                        </h3>
-                        <ul className="space-y-2.5 text-[15px] text-gray-600">
-                            <li className="flex items-center gap-2">
-                                <Brain size={14} className="text-indigo-600" /> Artificial Intelligence
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <Bot size={14} className="text-indigo-600" /> Machine Learning
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <Wifi size={14} className="text-indigo-600" /> Internet of Things (IoT)
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <Globe size={14} className="text-indigo-600" /> Networking
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <ChartColumn size={14} className="text-indigo-600" /> Statistics
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h3 className="text-[17px] font-bold text-gray-900 tracking-wider uppercase mb-4">
-                            Resources
-                        </h3>
-                        <ul className="space-y-3 text-[15px]">
-                            <li>
-                                <a href="/" className="text-gray-600 hover:text-indigo-600 transition flex items-center gap-1">
-                                    Documentation <ArrowUpRight size={14} className="text-gray-400" />
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/" className="text-gray-600 hover:text-indigo-600 transition">
-                                    API Reference
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/" className="text-gray-600 hover:text-indigo-600 transition">
-                                    Privacy Policy
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/" className="text-gray-600 hover:text-indigo-600 transition">
-                                    Terms of Service
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-
                 </div>
 
-                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[14px] text-gray-600 font-bold">
+                <div className='h-auto w-auto flex flex-col justify-center gap-1 md:w-auto mt-6'>
+                    <h1 className='font-bold text-white text-[25px]'>Navigation</h1>
+                    <Link to="/" className='text-white text-[15px]  hover:text-purple-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><Home size={14} className="text-indigo-600" />Home</Link>
+                    <Link to="/build-resume" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><LayoutDashboard size={14} className="text-indigo-600" />Dashboard</Link>
+                    <Link to="/Login" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><MessageSquare size={14} className="text-indigo-600" />Ask AI</Link>
+                    <Link to="/Contact" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'> <Upload size={14} className="text-indigo-600" /> Upload</Link>
+                    <Link to="/Contact" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><Info size={14} className="text-indigo-600" /> Chat With</Link>
+                </div>
 
-                    <p>© {new Date().getFullYear()} AI Research Assistant. All rights reserved.</p>
-                    <p className="flex items-center gap-1">
-                        Built with <Heart size={14} className="text-red-500 fill-red-500" /> for researchers & students.
-                    </p>
+                <div className='h-auto w-auto md:w-auto mt-6'>
+                    <h1 className='font-bold text-white text-[25px]'> Domains</h1>
+                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3 items-center'><Wifi size={14} className="text-indigo-600" /> Internet of Things (IoT)</div>
+                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3 items-center'> <Brain size={14} className="text-indigo-600" />Artificial Intelligence</div>
+                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3 items-center'><Bot size={14} className="text-indigo-600" />Machine Learning</div>
+                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3 items-center'><Globe size={14} className="text-indigo-600" /> NetworkingNetworking</div>
+                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3 items-center'><ChartColumn size={14} className="text-indigo-600" /> StatisticsStatistics</div>
+                </div>
 
-                    <div className="flex items-center gap-2 px-5 py-3 rounded-xl border border-cyan-400/20 bg-white shadow-md cursor-pointer">
-
-                        <Lock
-                            size={18}
-                            className="text-emerald-700"
-                        />
-
-                        <span className="text-emerald-700  text-sm font-bold">
-                            Secure • Private • Trusted
-                        </span>
-
-                    </div>
-
+                <div className='h-auto w-auto md:w-auto mt-6'>
+                    <h1 className='font-bold text-white text-[25px]'>Resources</h1>
+                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-2 items-center'>Documentation</div>
+                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-2 items-center'>API Reference</div>
+                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-2 items-center'> Privacy Policy</div>
+                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-2 items-center'>Terms of Service</div>
                 </div>
 
             </div>
 
-        </footer>
-    );
-};
+            <div className='h-auto w-full bg-black flex flex-col md:flex-row justify-center md:justify-around items-center gap-4 p-4 border-t-[1px] border-gray-600'>
+                <h1 className='font-bold text-sm md:text-[12px] text-white text-center'>© {new Date().getFullYear()} AI Research Assistant. All rights reserved.</h1>
+                <div className="flex items-center gap-2 px-5 py-3 rounded-xl border border-cyan-400/20 bg-white shadow-md cursor-pointer">
+                    <Lock
+                        size={18} className="text-emerald-700"
+                    />
+                    <span className="text-emerald-700  text-sm font-bold">            
+                        Secure • Private • Trusted
+                    </span>
+                </div>
+            </div>
+
+        </>
+    )
+}
 
 export default Footer;
