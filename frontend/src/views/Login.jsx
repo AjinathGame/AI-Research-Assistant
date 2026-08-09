@@ -86,7 +86,7 @@ export default function Login() {
                 [@media(max-height:800px)]:text-4xl
               "
             >
-              Welcome Back to
+              Welcome Back to 👋
             </h1>
 
             <h1
@@ -100,14 +100,14 @@ export default function Login() {
                 [@media(max-height:800px)]:text-4xl
               "
             >
-              AI Research Assistant
+              AI Research Assistant 
             </h1>
 
             <p
               className="
-                mt-2
+                mt-3
                 text-base
-                text-gray-400
+                text-gray-100
                 max-w-md
                 leading-7
 
@@ -115,8 +115,8 @@ export default function Login() {
                 [@media(max-height:800px)]:leading-6
               "
             >
-              Access your research library, upload notes, and continue asking
-              AI-powered questions with accurate source references.
+              Access your research library, upload notes, and continue<br/> asking
+              AI-powered questions with accurate source<br/> references.
             </p>
 
           </div>
