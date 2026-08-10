@@ -1,70 +1,156 @@
-import React from 'react'
-import LOGO from '../../assets/main_logo.png'
-import {
-    Brain, Bot, Wifi, Globe, ChartColumn, SquareCheckBig, SquarePen, Heart, ArrowUpRight, Home, LayoutDashboard, MessageSquare, Upload, Info, LogIn, Lock,
-} from "lucide-react";
-import { Link, BrowserRouter } from "react-router-dom";
+import React from "react";
+import { Brain, Bot, Wifi, Globe, ChartColumn, Home, LayoutDashboard, MessageSquare, Upload, Info, Lock } from "lucide-react";
+import { Link } from "react-router-dom";
+import LOGO from "../../assets/main_logo.png";
 
 const Footer = () => {
+
     return (
+
         <>
-            <div className='h-auto w-full bg-black border-t-4 border-indigo-600 rounded-tr-md rounded-tl-md flex flex-col md:flex-row items-start justify-center  md:gap-2 lg:gap-20  mt-10 p-8 md:h-[350px]'>
-                <div className='h-[150px] w-[150px] bg-transparent rounded-full overflow-hidden mt-6'>
-                    <img src={LOGO} alt='logo' className='h-[100%] w-[100%] rounded-full '></img>
-                </div>
-                <div className='h-auto w-full md:w-[350px] text-center md:text-left leading-8 mt-6'>
-                    <h1 className='font-bold text-white text-[30px] '>AI-Research Assistant</h1>
-                    <p className='text-gray-200 leading-5 mt-4 text-[14px]'>"Your intelligent research library. Upload chapter<br /> wise PDFs, ask questions in plain English, and<br /> get grounded answers with exact source<br /> page numbers."</p>
-                    <div className="flex items-center gap-2 pt-2 mt-4 lg:flex">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-green-50 border border-green-200 text-green-700 text-xs font-semibold">
-                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                            System Operational
-                        </span>
+            <footer className="w-full bg-[#020815] text-white border-t-4 border-indigo-700 rounded-tl-md rounded-tr-md">
+
+                <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-10 lg:py-12">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-16">
+
+                        <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                            
+                            <img src={LOGO} alt="AI Research Assistant" className="w-30 h-30 object-contain rounded-2xl mb-5" />
+
+                            <h2 className="text-2xl sm:text-3xl font-bold leading-tight">
+                                AI-Research Assistant
+                            </h2>
+
+                            <p className="mt-4 text-sm sm:text-[15px] leading-6 text-gray-300 max-w-xs">
+                                "Access your research library, upload notes, and asking AI-powered questions."
+                            </p>
+
+                            <div className="mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-green-50 text-green-700 text-sm font-semibold">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                System Operational
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-center sm:items-start sm:text-left">
+                            <h3 className="text-xl sm:text-2xl font-bold mb-4">
+                                Navigation
+                            </h3>
+
+                            <div className="flex flex-col gap-3">
+
+                                <Link to="/" className="flex items-center sm:justify-start gap-3 text-gray-300 hover:text-indigo-400 transition">
+                                    <Home size={16} className="text-indigo-500" />
+                                    Home
+                                </Link>
+
+                                <Link to="/Dashboard" className="flex items-center sm:justify-start gap-3 text-gray-300 hover:text-indigo-400 transition">
+                                    <LayoutDashboard size={16} className="text-indigo-500" />
+                                    Dashboard
+                                </Link>
+
+                                <Link to="/Ask" className="flex items-center sm:justify-start gap-3 text-gray-300 hover:text-indigo-400 transition">
+                                    <MessageSquare size={16} className="text-indigo-500" />
+                                    Ask AI
+                                </Link>
+
+                                <Link to="/Uploads" className="flex items-center sm:justify-start gap-3 text-gray-300 hover:text-indigo-400 transition">
+                                    <Upload size={16} className="text-indigo-500" />
+                                    Upload
+                                </Link>
+
+                                <Link to="/About" className="flex items-center sm:justify-start gap-3 text-gray-300 hover:text-indigo-400 transition">
+                                    <Info size={16} className="text-indigo-500" />
+                                    About Us
+                                </Link>
+
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                            <h3 className="text-xl sm:text-2xl font-bold mb-4">
+                                Domains
+                            </h3>
+
+                            <div className="flex flex-col gap-3 text-gray-300">
+
+                                <div className="flex items-center justify-center sm:justify-start gap-3">
+                                    <Wifi size={16} className="text-indigo-500" />
+                                    Internet of Things (IoT)
+                                </div>
+
+                                <div className="flex items-center justify-center sm:justify-start gap-3">
+                                    <Brain size={16} className="text-indigo-500" />
+                                    Artificial Intelligence
+                                </div>
+
+                                <div className="flex items-center justify-center sm:justify-start gap-3">
+                                    <Bot size={16} className="text-indigo-500" />
+                                    Machine Learning
+                                </div>
+
+                                <div className="flex items-center justify-center sm:justify-start gap-3">
+                                    <Globe size={16} className="text-indigo-500" />
+                                    Networking
+                                </div>
+
+                                <div className="flex items-center justify-center sm:justify-start gap-3">
+                                    <ChartColumn size={16} className="text-indigo-500" />
+                                    Statistics
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                            <h3 className="text-xl sm:text-2xl font-bold mb-4">
+                                Resources
+                            </h3>
+
+                            <div className="flex flex-col gap-3 text-gray-300">
+
+                                <a href="#" className="hover:text-indigo-400 transition">
+                                    Documentation
+                                </a>
+
+                                <a href="#" className="hover:text-indigo-400 transition">
+                                    API Reference
+                                </a>
+
+                                <a href="#" className="hover:text-indigo-400 transition">
+                                    Privacy Policy
+                                </a>
+
+                                <a href="#" className="hover:text-indigo-400 transition">
+                                    Terms of Service
+                                </a>
+
+                            </div>
+                        </div>
+
                     </div>
+
+                    <div className="mt-10 pt-6 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-5">
+
+                        <p className="text-sm text-gray-200 text-center md:text-left">
+                            © {new Date().getFullYear()} AI Research Assistant. All rights reserved.
+                        </p>
+
+                        <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-cyan-400/20 bg-white shadow-md">
+                            <Lock size={17} className="text-emerald-700" />
+
+                            <span className="text-emerald-700 text-sm font-bold whitespace-nowrap">
+                                Secure • Private • Trusted
+                            </span>
+                        </div>
+
+                    </div>
+
                 </div>
-
-                <div className='h-auto w-auto flex flex-col justify-center gap-1 md:w-auto mt-6'>
-                    <h1 className='font-bold text-white text-[25px]'>Navigation</h1>
-                    <Link to="/" className='text-white text-[15px]  hover:text-purple-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><Home size={14} className="text-indigo-600" />Home</Link>
-                    <Link to="/Dashboard" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><LayoutDashboard size={14} className="text-indigo-600" />Dashboard</Link>
-                    <Link to="/Ask" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><MessageSquare size={14} className="text-indigo-600" />Ask AI</Link>
-                    <Link to="/Uploads" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'> <Upload size={14} className="text-indigo-600" /> Upload</Link>
-                    <Link to="/About" className='text-white text-[15px]  hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3  items-center cursor-pointer'><Info size={14} className="text-indigo-600" /> About US</Link>
-                </div>
-
-                <div className='h-auto w-auto md:w-auto mt-6'>
-                    <h1 className='font-bold text-white text-[25px]'> Domains</h1>
-                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3 items-center'><Wifi size={14} className="text-indigo-600" /> Internet of Things (IoT)</div>
-                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3 items-center'> <Brain size={14} className="text-indigo-600" />Artificial Intelligence</div>
-                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3 items-center'><Bot size={14} className="text-indigo-600" />Machine Learning</div>
-                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3 items-center'><Globe size={14} className="text-indigo-600" /> NetworkingNetworking</div>
-                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-3 items-center'><ChartColumn size={14} className="text-indigo-600" /> StatisticsStatistics</div>
-                </div>
-
-                <div className='h-auto w-auto md:w-auto mt-6'>
-                    <h1 className='font-bold text-white text-[25px]'>Resources</h1>
-                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-2 items-center'>Documentation</div>
-                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-2 items-center'>API Reference</div>
-                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-2 items-center'> Privacy Policy</div>
-                    <div className='text-white text-[15px] hover:text-indigo-700 transition-all duration-500 mt-3 flex gap-2 items-center'>Terms of Service</div>
-                </div>
-
-            </div>
-
-            <div className='h-auto w-full bg-black flex flex-col md:flex-row justify-center md:justify-around items-center gap-4 p-4 border-t-[1px] border-gray-600'>
-                <h1 className='font-bold text-sm md:text-[12px] text-white text-center'>© {new Date().getFullYear()} AI Research Assistant. All rights reserved.</h1>
-                <div className="flex items-center gap-2 px-5 py-3 rounded-xl border border-cyan-400/20 bg-white shadow-md cursor-pointer">
-                    <Lock
-                        size={18} className="text-emerald-700"
-                    />
-                    <span className="text-emerald-700  text-sm font-bold">            
-                        Secure • Private • Trusted
-                    </span>
-                </div>
-            </div>
-
+                
+            </footer>
         </>
-    )
-}
+    );
+};
 
 export default Footer;

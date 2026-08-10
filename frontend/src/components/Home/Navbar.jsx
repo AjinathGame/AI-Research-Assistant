@@ -114,7 +114,7 @@ const Navbar = () => {
               Ask
             </Link>
 
-            <Link to="/Upload" className="flex items-center gap-3 font-semibold">
+            <Link to="/Uploads" className="flex items-center gap-3 font-semibold">
               <Upload size={18} />
               Upload
             </Link>
