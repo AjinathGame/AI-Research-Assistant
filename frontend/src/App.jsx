@@ -5,6 +5,7 @@ import Uploads from "./views/Uploads.jsx";
 import Ask from "./views/Ask.jsx";
 import Home from "./views/Home.jsx";
 import Login from "./views/Login.jsx";
+import About from "./views/About.jsx";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
 
         <Route path="/" element = {<Home/>}></Route>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/about" element ={<About/>} />
         <Route path="/uploads" element={<Uploads />} />
         <Route path="/ask" element={<Ask />} />
         <Route path="/login" element={<Login />} />
