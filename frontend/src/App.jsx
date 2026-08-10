@@ -6,6 +6,7 @@ import Ask from "./views/Ask.jsx";
 import Home from "./views/Home.jsx";
 import Login from "./views/Login.jsx";
 import About from "./views/About.jsx";
+import CreateAccount from "./views/CreateAccount.jsx";
 
 export default function App() {
   return (
@@ -20,7 +21,7 @@ export default function App() {
         <Route path="/uploads" element={<Uploads />} />
         <Route path="/ask" element={<Ask />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<h1>hii</h1>} />
+        <Route path="/CreateAccount" element={<CreateAccount />} />
 
         
         <Route path="*" element={<h1>404 - Page Not Found</h1>} />
