@@ -50,6 +50,11 @@ export default function ChatBox() {
               <option>Networking</option>
               <option>Database</option>
               <option>AWS Cloud</option>
+              <option>Statistics</option>
+              <option>Probability</option>
+              <option>Testing</option>
+              <option>Design Theory</option>
+              
             </select>
 
             <ChevronDown
@@ -68,7 +73,7 @@ export default function ChatBox() {
             >
               <option>GPT-5.2</option>
               <option>GPT-4.1</option>
-              <option>GPT-4o</option>
+             
             </select>
 
             <ChevronDown

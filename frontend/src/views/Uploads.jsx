@@ -1,6 +1,4 @@
 import Navbar from "../components/Home/Navbar.jsx";
-
-
 import UploadHero from "../components/upload/UploadHero.jsx";
 import DragDropUpload from "../components/upload/DragDropUpload.jsx";
 import UploadSettings from "../components/upload/UploadSettings.jsx";
@@ -10,13 +8,8 @@ import Footer from "../components/Home/Footer.jsx";
 export default function UploadPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-
-
-     
-      <div className="">
-       
+      <div>
         <Navbar />
-
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8  lg:py-8">
             <UploadHero />

@@ -12,7 +12,7 @@ export default function AskHero() {
      
       <div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">
-          Question the corpus
+          Ask Your Documents
         </h1>
 
         <p className="mt-2 max-w-2xl text-base sm:text-lg leading-8 text-slate-500">
