@@ -4,7 +4,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 config();
-import connectDB from './config/connectDB.js';
+import connectDB from './app/config/connectDB.js';
 
 
 
