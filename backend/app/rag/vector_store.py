@@ -9,7 +9,7 @@ from app.rag.embeddings import embed_texts, embed_query
 
 CHROMA_DIR = os.environ.get(
     "CHROMA_DIR",
-    str(Path(__file__).resolve().parents[3] / "chroma_db")
+    str(Path(__file__).resolve().parents[2] / "chroma_db")
 )
 
 
