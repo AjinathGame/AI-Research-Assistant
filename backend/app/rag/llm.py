@@ -23,6 +23,9 @@ def generate_answer(
     if not question or not question.strip():
         raise ValueError("Question cannot be empty")
 
+    if not hits:
+        return "The answer is not available in the uploaded documents."
+
     prompt = build_prompt(
         question=question,
         hits=hits
@@ -46,4 +49,4 @@ def generate_answer(
 
         raise RuntimeError(
             "Failed to generate answer using Gemini"
-        )
+        ) from error
