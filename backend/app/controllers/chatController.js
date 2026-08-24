@@ -4,7 +4,8 @@ export const askChatQuestion = async (req, res) => {
   try {
     const {
       question,
-      technology,
+      technologyId,
+      folderId,
       topK = 5,
     } = req.body;
 
@@ -15,10 +16,25 @@ export const askChatQuestion = async (req, res) => {
       });
     }
 
+    if (!technologyId) {
+      return res.status(400).json({
+        success: false,
+        message: "Technology is required",
+      });
+    }
+
+    if (!folderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Folder is required",
+      });
+    }
+
     const result = await askQuestion({
       question,
       userId: "user-001",
-      technology: technology || "all",
+      technologyId,
+      folderId,
       topK,
     });
 

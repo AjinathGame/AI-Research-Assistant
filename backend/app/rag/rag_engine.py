@@ -13,7 +13,8 @@ def index_pdf(
     pdf_id: str,
     user_id: str,
     filename: str,
-    technology: str,
+    technology_id: str,
+    folder_id: str,
 ) -> Dict[str, Any]:
 
     if not file_path:
@@ -28,8 +29,11 @@ def index_pdf(
     if not filename:
         raise ValueError("Filename is required")
 
-    if not technology:
-        raise ValueError("Technology is required")
+    if not technology_id:
+        raise ValueError("Technology ID is required")
+
+    if not folder_id:
+        raise ValueError("Folder ID is required")
 
     pages = extract_pages(file_path)
 
@@ -59,7 +63,8 @@ def index_pdf(
             "pdf_id": pdf_id,
             "user_id": user_id,
             "filename": filename,
-            "technology": technology,
+            "technology_id": technology_id,
+            "folder_id": folder_id,
             "page": chunk["page"],
             "chunk_index": chunk["chunk_index"],
             "text": chunk["text"],
@@ -73,7 +78,8 @@ def index_pdf(
         "status": "completed",
         "pdf_id": pdf_id,
         "filename": filename,
-        "technology": technology,
+        "technology_id": technology_id,
+        "folder_id": folder_id,
         "pages": len(cleaned_pages),
         "chunks": len(chunks),
         "stored_chunks": stored_count,
@@ -83,7 +89,8 @@ def index_pdf(
 def ask_question(
     question: str,
     user_id: str,
-    technology: Optional[str] = None,
+    technology_id: Optional[str] = None,
+    folder_id: Optional[str] = None,
     top_k: int = 5,
 ) -> Dict[str, Any]:
 
@@ -100,7 +107,8 @@ def ask_question(
     hits = retrieve(
         query=question,
         user_id=user_id,
-        technology=technology,
+        technology_id=technology_id,
+        folder_id=folder_id,
         top_k=top_k,
     )
 
@@ -108,7 +116,7 @@ def ask_question(
         return {
             "answer": (
                 "The answer is not available "
-                "in the uploaded documents."
+                "in the selected folder."
             ),
             "sources": [],
         }
@@ -125,7 +133,8 @@ def ask_question(
             "pdf_id": hit.get("pdf_id"),
             "pdf_name": hit.get("pdf_name"),
             "page": hit.get("page"),
-            "technology": hit.get("technology"),
+            "technology_id": hit.get("technology_id"),
+            "folder_id": hit.get("folder_id"),
             "score": hit.get("score"),
         })
 
