@@ -26,7 +26,7 @@ const Home = () => {
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-5xl font-bold text-[#111827] leading-13">
-                A research library <br />
+                A search library <br />
                 that answers{" "}
                 <span className="text-indigo-600">
                   back.

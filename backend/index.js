@@ -5,6 +5,9 @@ import cors from "cors";
 import connectDB from "./app/config/connectDB.js";
 import pdfRoutes from "./app/routes/pdfRoutes.js";
 import chatRoutes from "./app/routes/chatRoutes.js";
+import technologyRoutes from "./app/routes/technologyRoutes.js";
+import folderRoutes from "./app/routes/folderRoutes.js";
+
 
 config();
 
@@ -16,6 +19,9 @@ app.use(express.json());
 
 app.use("/api/pdf", pdfRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/technologies", technologyRoutes);
+app.use("/api/folders", folderRoutes);
+
 
 app.get("/", (req, res) => {
   res.json({

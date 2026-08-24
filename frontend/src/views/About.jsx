@@ -69,12 +69,12 @@ const About = () => {
 
                         <div className="w-full max-w-2xl">
                             <h1 className="text-3xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
-                                About AI-Research Assistant{" "}
+                                About AI-Search Assistant{" "}
                                 <span className="text-3xl sm:text-4xl">🤖</span>
                             </h1>
 
                             <p className="mt-5 max-w-xl text-sm leading-6 text-white/90 sm:mt-6 sm:text-lg sm:leading-7">
-                                An intelligent research platform designed to help students and
+                                An intelligent search platform designed to help students and
                                 researchers upload, organize, search, and understand their
                                 research documents using Artificial Intelligence.
                             </p>
@@ -94,11 +94,11 @@ const About = () => {
                             </p>
 
                             <h2 className="text-2xl font-bold leading-tight text-gray-900 sm:text-4xl">
-                                Making Research Faster and Smarter
+                                Making Search Faster and Smarter
                             </h2>
 
                             <p className="mt-4 text-sm leading-6 text-gray-600 sm:mt-5 sm:text-base sm:leading-7">
-                                AI Research Assistant is a web-based system that helps users
+                                AI Search Assistant is a web-based system that helps users
                                 work with research papers, notes, and other study materials.
                                 Instead of manually searching through lengthy documents, users
                                 can upload their documents and use an AI-powered interface to
@@ -262,7 +262,7 @@ const About = () => {
 
                 <section className="border-t border-gray-200 bg-white px-5 py-8 text-center sm:px-8 sm:py-10">
                     <h2 className="text-xl font-bold sm:text-2xl">
-                        AI Research Assistant System
+                        AI Search Assistant System
                     </h2>
 
                     <p className="mx-auto mt-2 max-w-2xl text-xs leading-5 text-gray-500 sm:mt-3 sm:text-sm sm:leading-6">

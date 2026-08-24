@@ -28,7 +28,7 @@ const Navbar = () => {
           <div>
             <Link to="/">
               <h2 className="text-[22px] font-bold text-gray-900">
-                AI Research Assistant
+                AI Search Assistant
               </h2>
 
               <p className="text-sm font-serif font-serif text-black">

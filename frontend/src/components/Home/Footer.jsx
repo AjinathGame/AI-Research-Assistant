@@ -19,7 +19,7 @@ const Footer = () => {
                             <img src={LOGO} alt="AI Research Assistant" className="w-30 h-30 object-contain rounded-2xl mb-5" />
 
                             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">
-                                AI-Research Assistant
+                                AI-Search Assistant
                             </h2>
 
                             <p className="mt-4 text-sm sm:text-[15px] leading-6 text-gray-300 max-w-xs">

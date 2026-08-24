@@ -46,7 +46,8 @@ def add_chunks(chunks: List[Dict[str, Any]]) -> int:
             "pdf_id": chunk["pdf_id"],
             "user_id": chunk["user_id"],
             "filename": chunk["filename"],
-            "technology": chunk["technology"],
+            "technology_id": chunk["technology_id"],
+            "folder_id": chunk["folder_id"],
             "page": chunk["page"],
         })
 
@@ -63,7 +64,6 @@ def add_chunks(chunks: List[Dict[str, Any]]) -> int:
         )
 
     return len(documents)
-
 
 def delete_pdf(pdf_id: str) -> int:
     existing = _collection.get(
@@ -105,25 +105,43 @@ def get_pdf_chunks(pdf_id: str) -> List[Dict[str, Any]]:
 def search_chunks(
     query: str,
     user_id: str,
-    technology: Optional[str] = None,
+    technology_id: Optional[str] = None,
+    folder_id: Optional[str] = None,
     top_k: int = 5,
 ) -> List[Dict[str, Any]]:
 
     if not query or not query.strip():
         return []
 
+    if not user_id or not user_id.strip():
+        return []
+
+    if top_k <= 0:
+        return []
+
     query_embedding = embed_query(query)
 
-    where = {
-        "user_id": user_id
-    }
+    conditions = [
+        {
+            "user_id": user_id
+        }
+    ]
 
-    if technology and technology.lower() != "all":
+    if technology_id and technology_id.lower() != "all":
+        conditions.append({
+            "technology_id": technology_id
+        })
+
+    if folder_id and folder_id.lower() != "all":
+        conditions.append({
+            "folder_id": folder_id
+        })
+
+    if len(conditions) == 1:
+        where = conditions[0]
+    else:
         where = {
-            "$and": [
-                {"user_id": user_id},
-                {"technology": technology},
-            ]
+            "$and": conditions
         }
 
     result = _collection.query(
@@ -176,7 +194,8 @@ def search_chunks(
             "pdf_id": metadata.get("pdf_id"),
             "pdf_name": metadata.get("filename"),
             "page": metadata.get("page"),
-            "technology": metadata.get("technology"),
+            "technology_id": metadata.get("technology_id"),
+            "folder_id": metadata.get("folder_id"),
             "score": round(similarity, 4),
         })
 
