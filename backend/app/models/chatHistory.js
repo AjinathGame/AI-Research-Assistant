@@ -18,9 +18,16 @@ const chatHistorySchema = new mongoose.Schema(
       required: true,
     },
 
-    technology: {
-      type: String,
-      default: "all",
+    technologyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Technology",
+      required: true,
+    },
+
+    folderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Folder",
+      required: true,
     },
 
     sources: {

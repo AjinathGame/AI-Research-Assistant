@@ -33,7 +33,7 @@ print("RAG_RESULT:" + json.dumps(result))
 `;
 
     const python = spawn(
-      "python",
+      "py",
       ["-c", pythonCode],
       {
         cwd: backendPath,
@@ -118,7 +118,7 @@ print("RAG_RESULT:" + json.dumps(result))
 `;
 
     const python = spawn(
-      "python",
+      "py",
       ["-c", pythonCode],
       {
         cwd: backendPath,
@@ -195,7 +195,7 @@ print("RAG_RESULT:" + str(result))
 `;
 
     const python = spawn(
-      "python",
+      "py",
       ["-c", pythonCode],
       {
         cwd: backendPath,
