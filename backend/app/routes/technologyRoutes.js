@@ -6,6 +6,7 @@ import {
   getTechnologyById,
   deleteTechnology,
 } from "../controllers/technologyController.js";
+
 const router = express.Router();
 
 router.post("/", createTechnology);

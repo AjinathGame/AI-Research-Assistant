@@ -9,13 +9,17 @@ import technologyRoutes from "./app/routes/technologyRoutes.js";
 import folderRoutes from "./app/routes/folderRoutes.js";
 
 
+
 config();
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+
 
 app.use("/api/pdf", pdfRoutes);
 app.use("/api/chat", chatRoutes);

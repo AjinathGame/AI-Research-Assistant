@@ -19,6 +19,7 @@ const createSafeName = (value) => {
 
 export const uploadPdf = async (req, res) => {
   let temporaryFilePath = null;
+  let pdf = null;
 
   try {
     if (!req.file) {
@@ -94,7 +95,9 @@ export const uploadPdf = async (req, res) => {
       recursive: true,
     });
 
-    const extension = path.extname(req.file.originalname).toLowerCase();
+    const extension = path.extname(
+      req.file.originalname
+    ).toLowerCase();
 
     const baseName = path
       .basename(req.file.originalname, extension)
@@ -116,8 +119,8 @@ export const uploadPdf = async (req, res) => {
 
     temporaryFilePath = null;
 
-    const pdf = await Pdf.create({
-      filename: uniqueName,
+    pdf = await Pdf.create({
+      filename: req.file.filename,
       originalName: req.file.originalname,
       filePath: finalFilePath,
       technologyId: technology._id,
@@ -130,14 +133,14 @@ export const uploadPdf = async (req, res) => {
       `PDF saved in folder: ${technology.slug}/${folder.slug}`
     );
 
+    // RAG Processing
     try {
       const ragResult = await indexPdf({
         filePath: finalFilePath,
         pdfId: pdf._id.toString(),
         userId: "user-001",
         filename: req.file.originalname,
-        technologyId: technology._id.toString(),
-        folderId: folder._id.toString(),
+        technology,
       });
 
       pdf.status = "processed";
@@ -152,12 +155,17 @@ export const uploadPdf = async (req, res) => {
           rag: ragResult,
         },
       });
+
     } catch (ragError) {
+
       pdf.status = "failed";
 
       await pdf.save();
 
-      console.error("RAG Processing Error:", ragError);
+      console.error(
+        "RAG Processing Error:",
+        ragError
+      );
 
       return res.status(500).json({
         success: false,
@@ -165,7 +173,9 @@ export const uploadPdf = async (req, res) => {
         error: ragError.message,
       });
     }
+
   } catch (error) {
+
     if (
       temporaryFilePath &&
       fs.existsSync(temporaryFilePath)
@@ -182,7 +192,6 @@ export const uploadPdf = async (req, res) => {
     });
   }
 };
-
 export const deletePdf = async (req, res) => {
   try {
     const { pdfId } = req.params;
@@ -228,6 +237,34 @@ export const deletePdf = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to delete PDF",
+      error: error.message,
+    });
+  }
+};
+
+
+export const getPdfList = async (req, res) => {
+  try {
+
+    //  const userId = "6a80b25c6e489cf2c83167b2";
+
+    const userId= "6a80b2916e489cf2c83167b3";
+
+    const pdfs = await Pdf.find({userId: userId})
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "PDF list fetched successfully",
+      data: pdfs,
+    });
+
+  } catch (error) {
+    console.error("PDF List Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch PDF list",
       error: error.message,
     });
   }
