@@ -38,11 +38,7 @@ print("RAG_RESULT:" + json.dumps(result))
 `;
 
     const python = spawn(
-<<<<<<< HEAD
-      "py",
-=======
       PYTHON_PATH,
->>>>>>> 167bbcc (add list api)
       ["-c", pythonCode],
       {
         cwd: backendPath,
@@ -127,11 +123,7 @@ print("RAG_RESULT:" + json.dumps(result))
 `;
 
     const python = spawn(
-<<<<<<< HEAD
-      "py",
-=======
       PYTHON_PATH,
->>>>>>> 167bbcc (add list api)
       ["-c", pythonCode],
       {
         cwd: backendPath,

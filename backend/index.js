@@ -1,6 +1,10 @@
 import "dotenv/config";
 
 import express from "express";
+import dotenv from "dotenv";
+
+
+dotenv.config();
 import cors from "cors";
 
 import connectDB from "./app/config/connectDB.js";
@@ -8,9 +12,12 @@ import pdfRoutes from "./app/routes/pdfRoutes.js";
 import chatRoutes from "./app/routes/chatRoutes.js";
 import technologyRoutes from "./app/routes/technologyRoutes.js";
 import folderRoutes from "./app/routes/folderRoutes.js";
+import authRoutes from "./app/routes/authRoutes.js";
+import loginRoutes from "./app/routes/loginRoutes.js";
+import verificationRoutes from "./app/routes/verificationRoutes.js";
 
 
-config();
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +30,8 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/technologies", technologyRoutes);
 app.use("/api/folders", folderRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/auth", loginRoutes);
+app.use("/api/auth", verificationRoutes);
 
 app.get("/", (req, res) => {
   res.json({
