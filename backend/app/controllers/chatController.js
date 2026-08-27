@@ -1,4 +1,5 @@
 import { askQuestion } from "../services/rag_service.js";
+import ChatHistory from "../models/chatHistory.js";
 
 export const askChatQuestion = async (req, res) => {
   try {
@@ -38,6 +39,15 @@ export const askChatQuestion = async (req, res) => {
       topK,
     });
 
+    await ChatHistory.create({
+      userId: "user-001",
+      question,
+      answer: result.answer,
+      technologyId,
+      folderId,
+      sources: result.sources || [],
+    });
+
     return res.status(200).json({
       success: true,
       message: "Answer generated successfully",
@@ -50,6 +60,53 @@ export const askChatQuestion = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to generate answer",
+      error: error.message,
+    });
+  }
+};
+
+export const getChatHistory = async (req, res) => {
+  try {
+    const userId = "user-001";
+
+    const history = await ChatHistory.find({ userId })
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "Chat history fetched successfully",
+      count: history.length,
+      data: history,
+    });
+
+  } catch (error) {
+    console.error("Get Chat History Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch chat history",
+      error: error.message,
+    });
+  }
+};
+
+export const deleteChatHistory = async (req, res) => {
+  try {
+    const userId = "user-001";
+
+    const result = await ChatHistory.deleteMany({ userId });
+
+    return res.status(200).json({
+      success: true,
+      message: "Chat history deleted successfully",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Delete Chat History Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete chat history",
       error: error.message,
     });
   }

@@ -5,6 +5,11 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+
+const PYTHON_PATH =
+  process.env.PYTHON_PATH ||
+  "C:\\Users\\Dattatray\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe";
+
 export const indexPdf = ({
   filePath,
   pdfId,
@@ -33,7 +38,11 @@ print("RAG_RESULT:" + json.dumps(result))
 `;
 
     const python = spawn(
-      "python",
+<<<<<<< HEAD
+      "py",
+=======
+      PYTHON_PATH,
+>>>>>>> 167bbcc (add list api)
       ["-c", pythonCode],
       {
         cwd: backendPath,
@@ -118,7 +127,11 @@ print("RAG_RESULT:" + json.dumps(result))
 `;
 
     const python = spawn(
-      "python",
+<<<<<<< HEAD
+      "py",
+=======
+      PYTHON_PATH,
+>>>>>>> 167bbcc (add list api)
       ["-c", pythonCode],
       {
         cwd: backendPath,
@@ -195,7 +208,7 @@ print("RAG_RESULT:" + str(result))
 `;
 
     const python = spawn(
-      "python",
+      "py",
       ["-c", pythonCode],
       {
         cwd: backendPath,

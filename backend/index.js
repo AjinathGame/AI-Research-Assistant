@@ -8,18 +8,15 @@ import pdfRoutes from "./app/routes/pdfRoutes.js";
 import chatRoutes from "./app/routes/chatRoutes.js";
 import technologyRoutes from "./app/routes/technologyRoutes.js";
 import folderRoutes from "./app/routes/folderRoutes.js";
-import authRoutes from "./app/routes/authroutes.js";
 
 
-import passport from "passport";
-import "./app/config/passport.js";
+config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
-app.use(passport.initialize());
 
 app.use("/api/pdf", pdfRoutes);
 app.use("/api/chat", chatRoutes);
