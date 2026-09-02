@@ -4,6 +4,10 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sendVerificationEmail } from "../utils/sendEmail.js";
+import {
+  forgotPassword,
+  resetPassword,
+} from "../controllers/passwordController.js";
 
 
 export const registerUser = async (req, res) => {
@@ -88,6 +92,7 @@ export const registerUser = async (req, res) => {
             isVerified: false,
             verificationToken,
             verificationTokenExpires,
+            
         });
 
         console.log("SAVED TOKEN =", user.verificationToken);
@@ -117,4 +122,40 @@ export const registerUser = async (req, res) => {
             message: "Server error",
         });
     }
+};
+
+// =====================================================
+// DELETE ACCOUNT
+// =====================================================
+
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find logged-in user
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Delete complete user document
+    await User.findByIdAndDelete(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Account and user data deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Delete account error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete account",
+    });
+  }
 };

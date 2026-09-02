@@ -14,11 +14,28 @@ export const loginUser = async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+    });
 
     if (!user) {
       return res.status(401).json({
         message: "Invalid email or password",
+      });
+    }
+
+    // Check email verification
+    if (!user.isVerified) {
+      return res.status(403).json({
+        message: "Please verify your email before login",
+      });
+    }
+
+    // Google/GitHub account
+    if (!user.password) {
+      return res.status(400).json({
+        message:
+          "This account uses Google/GitHub login. Please continue with your social account.",
       });
     }
 
@@ -34,7 +51,7 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // JWT
+    // Generate JWT
     const token = jwt.sign(
       {
         id: user._id,
@@ -47,8 +64,11 @@ export const loginUser = async (req, res) => {
     );
 
     return res.status(200).json({
+      success: true,
       message: "Login successful",
+
       token,
+
       user: {
         id: user._id,
         name: user.name,
