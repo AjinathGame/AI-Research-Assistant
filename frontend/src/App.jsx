@@ -7,6 +7,7 @@ import Home from "./views/Home.jsx";
 import Login from "./views/Login.jsx";
 import About from "./views/About.jsx";
 import CreateAccount from "./views/CreateAccount.jsx";
+import TechnologyDetails from "./components/dashboard/TechnologyDetails.jsx";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/ask" element={<Ask />} />
         <Route path="/login" element={<Login />} />
         <Route path="/CreateAccount" element={<CreateAccount />} />
+        <Route path="/technology/:technologyId"element={<TechnologyDetails />}/>
 
         
         <Route path="*" element={<h1>404 - Page Not Found</h1>} />

@@ -82,6 +82,7 @@ def index_pdf(
         "folder_id": folder_id,
         "pages": len(cleaned_pages),
         "chunks": len(chunks),
+        "chunkCount": len(chunks),
         "stored_chunks": stored_count,
     }
 

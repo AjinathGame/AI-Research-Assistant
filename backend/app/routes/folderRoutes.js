@@ -4,6 +4,7 @@ import {
   createFolder,
   getFoldersByTechnology,
   getFolderById,
+  getSubfolders,
   deleteFolder,
 } from "../controllers/folderController.js";
 
@@ -16,7 +17,13 @@ router.get(
   getFoldersByTechnology
 );
 
+router.get(
+  "/:parentFolderId/subfolders",
+  getSubfolders
+);
+
 router.get("/:id", getFolderById);
-router.delete("/:id", deleteFolder);
+
+router.delete("/:folderId", deleteFolder);
 
 export default router;

@@ -6,9 +6,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-const PYTHON_PATH =
-  process.env.PYTHON_PATH ||
-  "C:\\Users\\Dattatray\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe";
 
 export const indexPdf = ({
   filePath,
@@ -38,7 +35,8 @@ print("RAG_RESULT:" + json.dumps(result))
 `;
 
     const python = spawn(
-      PYTHON_PATH,
+      "python",
+    
       ["-c", pythonCode],
       {
         cwd: backendPath,
@@ -123,7 +121,7 @@ print("RAG_RESULT:" + json.dumps(result))
 `;
 
     const python = spawn(
-      PYTHON_PATH,
+     "python",
       ["-c", pythonCode],
       {
         cwd: backendPath,
@@ -200,7 +198,7 @@ print("RAG_RESULT:" + str(result))
 `;
 
     const python = spawn(
-      "py",
+      "python",
       ["-c", pythonCode],
       {
         cwd: backendPath,

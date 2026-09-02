@@ -1,5 +1,6 @@
 import { askQuestion } from "../services/rag_service.js";
 import ChatHistory from "../models/chatHistory.js";
+import Question from "../models/Question.js";
 
 export const askChatQuestion = async (req, res) => {
   try {
@@ -9,6 +10,8 @@ export const askChatQuestion = async (req, res) => {
       folderId,
       topK = 5,
     } = req.body;
+
+    const userId = "user-001";
 
     if (!question || !question.trim()) {
       return res.status(400).json({
@@ -33,15 +36,22 @@ export const askChatQuestion = async (req, res) => {
 
     const result = await askQuestion({
       question,
-      userId: "user-001",
+      userId,
       technologyId,
       folderId,
       topK,
     });
 
+    await Question.create({
+      userId,
+      question: question.trim(),
+      technologyId,
+      folderId,
+    });
+
     await ChatHistory.create({
-      userId: "user-001",
-      question,
+      userId,
+      question: question.trim(),
       answer: result.answer,
       technologyId,
       folderId,
@@ -69,8 +79,11 @@ export const getChatHistory = async (req, res) => {
   try {
     const userId = "user-001";
 
-    const history = await ChatHistory.find({ userId })
-      .sort({ createdAt: -1 });
+    const history = await ChatHistory.find({
+      userId,
+    }).sort({
+      createdAt: -1,
+    });
 
     return res.status(200).json({
       success: true,
@@ -80,7 +93,10 @@ export const getChatHistory = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Get Chat History Error:", error);
+    console.error(
+      "Get Chat History Error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -94,15 +110,25 @@ export const deleteChatHistory = async (req, res) => {
   try {
     const userId = "user-001";
 
-    const result = await ChatHistory.deleteMany({ userId });
+    const result = await ChatHistory.deleteMany({
+      userId,
+    });
+
+    await Question.deleteMany({
+      userId,
+    });
 
     return res.status(200).json({
       success: true,
       message: "Chat history deleted successfully",
       deletedCount: result.deletedCount,
     });
+
   } catch (error) {
-    console.error("Delete Chat History Error:", error);
+    console.error(
+      "Delete Chat History Error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,

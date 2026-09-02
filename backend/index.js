@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import express from "express";
 import dotenv from "dotenv";
+import path from "path";
 
 
 dotenv.config();
@@ -24,6 +25,11 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+app.use(
+  "/storage",
+  express.static(path.join(process.cwd(), "storage"))
+);
 
 app.use("/api/pdf", pdfRoutes);
 app.use("/api/chat", chatRoutes);

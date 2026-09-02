@@ -14,11 +14,6 @@ const pdfSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
 
     originalName: {
       type: String,
@@ -51,9 +46,31 @@ const pdfSchema = new mongoose.Schema(
       required: true,
     },
 
+    pages: {
+      type: Number,
+      default: 0,
+    },
+
+    chunkCount: {
+      type: Number,
+      default: 0,
+    },
+
+    visibility: {
+      type: String,
+      enum: ["Private", "Team", "Public"],
+      default: "Private",
+      index: true,
+    },
+
     status: {
       type: String,
-      enum: ["uploaded", "processing", "processed", "failed"],
+      enum: [
+        "uploaded",
+        "processing",
+        "processed",
+        "failed",
+      ],
       default: "uploaded",
     },
   },

@@ -22,6 +22,13 @@ const folderSchema = new mongoose.Schema(
       index: true,
     },
 
+    parentFolderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Folder",
+      default: null,
+      index: true,
+    },
+
     description: {
       type: String,
       trim: true,
@@ -39,8 +46,14 @@ const folderSchema = new mongoose.Schema(
 );
 
 folderSchema.index(
-  { technologyId: 1, slug: 1 },
-  { unique: true }
+  {
+    technologyId: 1,
+    parentFolderId: 1,
+    slug: 1,
+  },
+  {
+    unique: true,
+  }
 );
 
 const Folder = mongoose.model("Folder", folderSchema);

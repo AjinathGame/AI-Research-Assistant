@@ -1,18 +1,24 @@
 import { UploadCloud, FileText } from "lucide-react";
 import { useRef, useState } from "react";
 
-export default function DragDropUpload() {
+export default function DragDropUpload({
+  selectedFiles,
+  setSelectedFiles,
+}) {
   const inputRef = useRef(null);
 
   const [dragActive, setDragActive] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const handleFiles = (files) => {
     const pdfFiles = [...files].filter(
       (file) => file.type === "application/pdf"
     );
 
-    setSelectedFiles(pdfFiles);
+    const validFiles = pdfFiles.filter(
+      (file) => file.size <= 50 * 1024 * 1024
+    );
+
+    setSelectedFiles(validFiles);
   };
 
   return (
@@ -39,8 +45,7 @@ export default function DragDropUpload() {
           setDragActive(false);
           handleFiles(e.dataTransfer.files);
         }}
-        className={`cursor-pointer rounded-3xl border-2 border-dashed transition-all duration-300
-        ${
+        className={`cursor-pointer rounded-3xl border-2 border-dashed transition-all duration-300 ${
           dragActive
             ? "border-indigo-600 bg-indigo-50"
             : "border-gray-300 hover:border-indigo-500 hover:bg-gray-50"
@@ -49,12 +54,10 @@ export default function DragDropUpload() {
         <div className="py-5 flex flex-col items-center">
 
           <div className="w-24 h-24 rounded-full bg-indigo-100 flex items-center justify-center">
-
             <UploadCloud
               size={44}
               className="text-indigo-600"
             />
-
           </div>
 
           <h2 className="mt-8 text-3xl font-bold text-gray-900">
@@ -66,19 +69,20 @@ export default function DragDropUpload() {
           </p>
 
           <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              inputRef.current.click();
+            }}
             className="mt-5 bg-indigo-600 cursor-pointer hover:bg-indigo-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition"
           >
             Browse Files
           </button>
 
           <div className="mt-8 flex gap-8 text-sm text-gray-500">
-
             <span>📄 PDF Only</span>
-
             <span>Maximum 50 MB</span>
-
             <span>Multiple Files Supported</span>
-
           </div>
 
         </div>
@@ -95,9 +99,10 @@ export default function DragDropUpload() {
 
             {selectedFiles.map((file, index) => (
               <div
-                key={index}
+                key={`${file.name}-${index}`}
                 className="flex justify-between items-center rounded-2xl border p-5"
               >
+
                 <div className="flex items-center gap-4">
 
                   <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
@@ -108,7 +113,6 @@ export default function DragDropUpload() {
                   </div>
 
                   <div>
-
                     <h4 className="font-semibold">
                       {file.name}
                     </h4>
@@ -116,7 +120,6 @@ export default function DragDropUpload() {
                     <p className="text-sm text-gray-500">
                       {(file.size / (1024 * 1024)).toFixed(2)} MB
                     </p>
-
                   </div>
 
                 </div>
