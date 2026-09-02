@@ -2,6 +2,9 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
+    // =========================
+    // Basic User Information
+    // =========================
     name: {
       type: String,
       required: true,
@@ -16,31 +19,51 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // =========================
+    // Google Authentication
+    // =========================
     googleId: {
       type: String,
       unique: true,
       sparse: true,
     },
 
+    // =========================
+    // GitHub Authentication
+    // =========================
+    githubId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    // =========================
+    // Normal Email/Password
+    // =========================
     password: {
       type: String,
       minlength: 6,
       default: null,
     },
 
-    // Authentication provider
+    // =========================
+    // Authentication Provider
+    // =========================
     authProvider: {
       type: String,
       enum: ["local", "google", "github"],
       default: "local",
     },
 
-    // Google / GitHub user ID
+    // Google / GitHub Provider ID
     providerId: {
       type: String,
       default: null,
     },
 
+    // =========================
+    // Email Verification
+    // =========================
     isVerified: {
       type: Boolean,
       default: false,
@@ -52,6 +75,19 @@ const userSchema = new mongoose.Schema(
     },
 
     verificationTokenExpires: {
+      type: Date,
+      default: null,
+    },
+
+    // =========================
+    // Forgot Password
+    // =========================
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+
+    resetPasswordExpires: {
       type: Date,
       default: null,
     },

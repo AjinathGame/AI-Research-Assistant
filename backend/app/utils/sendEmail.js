@@ -21,7 +21,7 @@ export const sendVerificationEmail = async (email, token) => {
     `${process.env.FRONTEND_URL}/verify-email/${token}`;
 
   const mailOptions = {
-    from: `"Scholar RAG" <${process.env.EMAIL_USER}>`,
+    from: `"AI-Search Assistant" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: "Verify Your Email",
 
@@ -63,6 +63,69 @@ export const sendVerificationEmail = async (email, token) => {
   await transporter.sendMail(mailOptions);
 };
 
+
+// ========================================
+// FORGOT PASSWORD EMAIL
+// ========================================
+
+export const sendResetPasswordEmail = async (email, token) => {
+
+  const resetLink =
+    `${process.env.FRONTEND_URL}/reset-password/${token}`;
+
+  const mailOptions = {
+    from: `"Scholar RAG" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Reset Your Password",
+
+    html: `
+      <div style="
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+      ">
+
+        <h2>Reset Your Password</h2>
+
+        <p>
+          We received a request to reset your Scholar RAG password.
+        </p>
+
+        <p>
+          Click the button below to create a new password.
+        </p>
+
+        <a
+          href="${resetLink}"
+          style="
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+          "
+        >
+          Reset Password
+        </a>
+
+        <p style="margin-top: 20px;">
+          This password reset link will expire in 15 minutes.
+        </p>
+
+        <p style="margin-top: 20px;">
+          If you did not request a password reset,
+          you can safely ignore this email.
+        </p>
+
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 transporter.verify((error, success) => {
   if (error) {
     console.error("EMAIL CONFIG ERROR:", error.message);
@@ -70,3 +133,4 @@ transporter.verify((error, success) => {
     console.log("EMAIL SERVER READY ✅");
   }
 });
+

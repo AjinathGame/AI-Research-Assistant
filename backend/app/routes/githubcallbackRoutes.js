@@ -5,13 +5,13 @@ import jwt from "jsonwebtoken";
 const router = express.Router();
 
 // =====================================================
-// Google Callback
+// GitHub Callback
 // =====================================================
 
 router.get(
-  "/google/callback",
+  "/github/callback",
 
-  passport.authenticate("google", {
+  passport.authenticate("github", {
     session: false,
     failureRedirect:
       "http://localhost:5173/Login",
@@ -19,6 +19,15 @@ router.get(
 
   (req, res) => {
     try {
+      console.log(
+        "GitHub callback successful"
+      );
+
+      console.log(
+        "GitHub User:",
+        req.user.email
+      );
+
       const token = jwt.sign(
         {
           id: req.user._id,
@@ -33,12 +42,7 @@ router.get(
       );
 
       console.log(
-        "Google Login Successful"
-      );
-
-      console.log(
-        "Google User:",
-        req.user.email
+        "GitHub JWT generated successfully"
       );
 
       res.redirect(
@@ -46,12 +50,12 @@ router.get(
       );
     } catch (error) {
       console.error(
-        "Google JWT Error:",
+        "GitHub JWT Error:",
         error
       );
 
       res.redirect(
-        "http://localhost:5173/Login?error=oauth_failed"
+        "http://localhost:5173/Login?error=github_failed"
       );
     }
   }
