@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
+const PYTHON_PATH = process.env.PYTHON_PATH || "python";
 
 export const indexPdf = ({
   filePath,
@@ -35,7 +36,7 @@ print("RAG_RESULT:" + json.dumps(result))
 `;
 
     const python = spawn(
-      "python",
+      PYTHON_PATH,
     
       ["-c", pythonCode],
       {
@@ -121,7 +122,7 @@ print("RAG_RESULT:" + json.dumps(result))
 `;
 
     const python = spawn(
-     "python",
+     PYTHON_PATH,
       ["-c", pythonCode],
       {
         cwd: backendPath,
@@ -198,7 +199,7 @@ print("RAG_RESULT:" + str(result))
 `;
 
     const python = spawn(
-      "python",
+      PYTHON_PATH,
       ["-c", pythonCode],
       {
         cwd: backendPath,

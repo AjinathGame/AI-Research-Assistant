@@ -175,18 +175,8 @@ const handleLogin = async (e) => {
 
           </div>
 
-          {/* ==========================
-              Login Card
-          ========================== */}
-
-          <div className="relative w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl sm:p-6 lg:w-[510px] lg:p-8">
-
-            {/* Back Home */}
-
-            <Link
-              to="/"
-              className="absolute right-5 top-4 flex cursor-pointer items-center gap-2 text-sm"
-            >
+          <div className="relative w-full max-w-md lg:w-[510px] bg-white rounded-3xl shadow-2xl p-5 sm:p-6 lg:p-8 [@media(max-height:800px)]:p-12 [@media(max-height:700px)]:p-10">
+            <Link to="/" className="absolute top-4 right-5 flex items-center gap-2 text-sm cursor-pointer hover:text-violet-600">
               <ArrowLeft size={15} />
               Back to Home
             </Link>
@@ -416,21 +406,11 @@ const handleLogin = async (e) => {
 
             </div>
 
-            {/* ==========================
-                Create Account
-            ========================== */}
-
-            <p className="mt-6 text-center text-sm text-gray-500 sm:text-base lg:mt-8">
-
+            <p className="text-center mt-6 lg:mt-8 text-gray-500 text-sm sm:text-base [@media(max-height:800px)]:mt-5 [@media(max-height:700px)]:mt-4">
               Don't have an account?
-
-              <Link
-                to="/Create-account"
-                className="ml-2 cursor-pointer font-semibold text-violet-600 hover:underline"
-              >
+              <Link to="/CreateAccount" className="text-violet-600 font-semibold ml-2 cursor-pointer hover:underline">
                 Create Account
               </Link>
-
             </p>
 
           </div>

@@ -174,14 +174,14 @@ export const uploadPdf = async (req, res) => {
       `PDF saved in folder: ${technology.slug}/${folder.slug}`
     );
 
+    
     try {
       const ragResult = await indexPdf({
         filePath: finalFilePath,
         pdfId: pdf._id.toString(),
         userId: "user-001",
         filename: req.file.originalname,
-        technologyId:
-          technology._id.toString(),
+        technologyId: technology._id.toString(),
         folderId: folder._id.toString(),
       });
 
@@ -369,18 +369,13 @@ export const deletePdf = async (req, res) => {
 
 export const getPdfList = async (req, res) => {
   try {
-    const pdfs = await Pdf.find()
-      .populate(
-        "technologyId",
-        "name slug"
-      )
-      .populate(
-        "folderId",
-        "name slug"
-      )
-      .sort({
-        createdAt: -1,
-      });
+
+     const userId = "6a80b25c6e489cf2c83167b2";
+
+    // const userId= "6a80b2916e489cf2c83167b3";
+
+    const pdfs = await Pdf.find({userId: userId})
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,

@@ -11,6 +11,16 @@ import VerifyEmail from "./views/VerifyEmail";
 import OAuthSuccess from "./views/OAuthSuccess";
 import ForgotPassword from "./views/ForgotPassword";
 import ResetPassword from "./views/ResetPassword";
+import TechnologyDetails from "./components/dashboard/TechnologyDetails.jsx";
+
+import AdminTechnologyDetails from "./views/Admin/AdminTechnologyDetails.jsx";
+import AdminQuestions from "./views/Admin/AdminQuestions.jsx"
+import AdminProfile from "./views/Admin/AdminProfile.jsx"
+import AdminDocuments from "./views/Admin/AdminDocuments.jsx"
+import AdminSettings from "./views/Admin/AdminSettings.jsx"
+
+
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -27,6 +37,16 @@ export default function App() {
         <Route path="/oauth-success"element={<OAuthSuccess />}/>
         <Route path="/forgot-password"element={<ForgotPassword />}/>
         <Route path="/reset-password/:token"element={<ResetPassword />}/>
+        <Route path="/technology/:technologyId" element={<TechnologyDetails />}/>
+
+         {/* Admin Section Routes */}
+
+        <Route path="/admin/technology-details" element={<AdminTechnologyDetails />}/>
+        <Route path="/AdminQuestions" element={<AdminQuestions/>}/>
+        <Route path="/AdminProfile" element={<AdminProfile/>}/>
+        <Route path="/AdminDocuments" element={<AdminDocuments/>}/>
+        <Route path="/AdminSettings" element={<AdminSettings/>}/>
+        
         
         <Route path="*" element={<h1>404 - Page Not Found</h1>} />
       </Routes>

@@ -5,7 +5,7 @@ const pdfSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: false,
+      required:false,
       index: true,
     },
 
@@ -14,7 +14,7 @@ const pdfSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
+    
     originalName: {
       type: String,
       required: true,
