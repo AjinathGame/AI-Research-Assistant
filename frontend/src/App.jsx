@@ -11,24 +11,35 @@ import VerifyEmail from "./views/VerifyEmail";
 import OAuthSuccess from "./views/OAuthSuccess";
 import ForgotPassword from "./views/ForgotPassword";
 import ResetPassword from "./views/ResetPassword";
+import TechnologyDetails from "./components/dashboard/TechnologyDetails.jsx";
+import AdminDashboard from "./views/Admin/AdminDashboard.jsx";
+import AdminUserDetails from "./views/Admin/AdminUserDetails.jsx";
+import AdminTechnologies from "./views/Admin/AdminTechnologies.jsx";
+import AdminUser from "./views/Admin/AdminUser.jsx";
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-       
-        <Route path="/" element = {<Home/>}></Route>
+
+        <Route path="/" element={<Home />}></Route>
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/about" element ={<About/>} />
+        <Route path="/about" element={<About />} />
         <Route path="/uploads" element={<Uploads />} />
         <Route path="/ask" element={<Ask />} />
         <Route path="/login" element={<Login />} />
         <Route path="/CreateAccount" element={<CreateAccount />} />
-        <Route path="/verify-email/:token"element={<VerifyEmail />}/>
-        <Route path="/oauth-success"element={<OAuthSuccess />}/>
-        <Route path="/forgot-password"element={<ForgotPassword />}/>
-        <Route path="/reset-password/:token"element={<ResetPassword />}/>
-        
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/oauth-success" element={<OAuthSuccess />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/technology/:technologyId" element={<TechnologyDetails />} />
         <Route path="*" element={<h1>404 - Page Not Found</h1>} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/userdetails" element={<AdminUserDetails />}/>
+        <Route path="/admin/user" element={<AdminUser />} />
+        <Route path="/admin/technologies" element={<AdminTechnologies />}/>
+
       </Routes>
     </BrowserRouter>
   );
