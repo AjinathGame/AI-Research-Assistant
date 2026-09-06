@@ -17,7 +17,6 @@ import AdminTechnologyDetails from "./views/Admin/AdminTechnologyDetails.jsx";
 import AdminQuestions from "./views/Admin/AdminQuestions.jsx"
 import AdminProfile from "./views/Admin/AdminProfile.jsx"
 import AdminDocuments from "./views/Admin/AdminDocuments.jsx"
-import AdminSettings from "./views/Admin/AdminSettings.jsx"
 
 
 
@@ -45,7 +44,6 @@ export default function App() {
         <Route path="/AdminQuestions" element={<AdminQuestions/>}/>
         <Route path="/AdminProfile" element={<AdminProfile/>}/>
         <Route path="/AdminDocuments" element={<AdminDocuments/>}/>
-        <Route path="/AdminSettings" element={<AdminSettings/>}/>
         
         
         <Route path="*" element={<h1>404 - Page Not Found</h1>} />
