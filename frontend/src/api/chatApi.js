@@ -1,5 +1,18 @@
 import API_BASE_URL from "./api";
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("Authentication token not found");
+  }
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+};
+
 export const askQuestion = async ({
   question,
   technologyId,
@@ -8,9 +21,7 @@ export const askQuestion = async ({
 }) => {
   const response = await fetch(`${API_BASE_URL}/chat/ask`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify({
       question,
       technologyId,
@@ -32,7 +43,11 @@ export const askQuestion = async ({
 
 export const getChatHistory = async () => {
   const response = await fetch(
-    `${API_BASE_URL}/chat/history`
+    `${API_BASE_URL}/chat/history`,
+    {
+      method: "GET",
+      headers: getAuthHeaders(),
+    }
   );
 
   const data = await response.json();
@@ -51,6 +66,7 @@ export const deleteChatHistory = async () => {
     `${API_BASE_URL}/chat/history`,
     {
       method: "DELETE",
+      headers: getAuthHeaders(),
     }
   );
 

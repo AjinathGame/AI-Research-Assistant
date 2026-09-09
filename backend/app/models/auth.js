@@ -2,9 +2,6 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    // =========================
-    // Basic User Information
-    // =========================
     name: {
       type: String,
       required: true,
@@ -19,51 +16,63 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // =========================
-    // Google Authentication
-    // =========================
     googleId: {
       type: String,
       unique: true,
       sparse: true,
     },
 
-    // =========================
-    // GitHub Authentication
-    // =========================
     githubId: {
       type: String,
       unique: true,
       sparse: true,
     },
 
-    // =========================
-    // Normal Email/Password
-    // =========================
     password: {
       type: String,
       minlength: 6,
       default: null,
     },
 
-    // =========================
-    // Authentication Provider
-    // =========================
     authProvider: {
       type: String,
       enum: ["local", "google", "github"],
       default: "local",
     },
 
-    // Google / GitHub Provider ID
     providerId: {
       type: String,
       default: null,
     },
 
-    // =========================
-    // Email Verification
-    // =========================
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
+
+    phone: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    location: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     isVerified: {
       type: Boolean,
       default: false,
@@ -79,9 +88,6 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    // =========================
-    // Forgot Password
-    // =========================
     resetPasswordToken: {
       type: String,
       default: null,

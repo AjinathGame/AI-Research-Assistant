@@ -1,6 +1,7 @@
 import Technology from "../models/Technology.js";
 import Folder from "../models/Folder.js";
 import Pdf from "../models/Pdf.js";
+import { createActivity } from "../services/activityService.js";
 
 export const createTechnology = async (req, res) => {
   try {
@@ -27,20 +28,19 @@ export const createTechnology = async (req, res) => {
       });
     }
 
-    const existingTechnology =
-      await Technology.findOne({
-        $or: [
-          {
-            name: {
-              $regex: `^${cleanName}$`,
-              $options: "i",
-            },
+    const existingTechnology = await Technology.findOne({
+      $or: [
+        {
+          name: {
+            $regex: `^${cleanName}$`,
+            $options: "i",
           },
-          {
-            slug,
-          },
-        ],
-      });
+        },
+        {
+          slug,
+        },
+      ],
+    });
 
     if (existingTechnology) {
       return res.status(409).json({
@@ -49,81 +49,73 @@ export const createTechnology = async (req, res) => {
       });
     }
 
-    const technology =
-      await Technology.create({
-        name: cleanName,
-        slug,
-        description:
-          description?.trim() || "",
-        isActive: true,
-      });
+    const technology = await Technology.create({
+      name: cleanName,
+      slug,
+      description: description?.trim() || "",
+      userId: req.user._id,
+      isActive: true,
+    });
+
+    await createActivity({
+      type: "technology_added",
+      title: "New technology added",
+      description: cleanName,
+      userId: req.user._id,
+      entityId: technology._id,
+      entityType: "Technology",
+    });
 
     return res.status(201).json({
       success: true,
-      message:
-        "Technology created successfully",
+      message: "Technology created successfully",
       data: technology,
     });
   } catch (error) {
-    console.error(
-      "Create Technology Error:",
-      error
-    );
+    console.error("Create Technology Error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to create technology",
+      message: "Failed to create technology",
     });
   }
 };
 
-export const getTechnologies = async (
-  req,
-  res
-) => {
+export const getTechnologies = async (req, res) => {
   try {
-    const technologies =
-      await Technology.find({
-        isActive: true,
-      }).sort({
-        name: 1,
-      });
+    const technologies = await Technology.find({
+      userId: req.user._id,
+      isActive: true,
+    }).sort({
+      name: 1,
+    });
 
     return res.status(200).json({
       success: true,
       data: technologies,
     });
   } catch (error) {
-    console.error(
-      "Get Technologies Error:",
-      error
-    );
+    console.error("Get Technologies Error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch technologies",
+      message: "Failed to fetch technologies",
     });
   }
 };
 
-export const getTechnologyById = async (
-  req,
-  res
-) => {
+export const getTechnologyById = async (req, res) => {
   try {
-    const technology =
-      await Technology.findOne({
-        _id: req.params.id,
-        isActive: true,
-      });
+    const technology = await Technology.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+      isActive: true,
+    });
 
     if (!technology) {
       return res.status(404).json({
         success: false,
-        message:
-          "Technology not found",
+        message: "Technology not found",
       });
     }
 
@@ -132,57 +124,42 @@ export const getTechnologyById = async (
       data: technology,
     });
   } catch (error) {
-    console.error(
-      "Get Technology Error:",
-      error
-    );
+    console.error("Get Technology Error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch technology",
+      message: "Failed to fetch technology",
     });
   }
 };
 
-export const deleteTechnology = async (
-  req,
-  res
-) => {
+export const deleteTechnology = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const technology =
-      await Technology.findOne({
-        _id: id,
-        isActive: true,
-      });
+    const technology = await Technology.findOne({
+      _id: id,
+      userId: req.user._id,
+      isActive: true,
+    });
 
     if (!technology) {
       return res.status(404).json({
         success: false,
-        message:
-          "Technology not found",
+        message: "Technology not found",
       });
     }
 
-    const folderCount =
-      await Folder.countDocuments({
-        technologyId:
-          technology._id,
-        isActive: true,
-      });
+    const folderCount = await Folder.countDocuments({
+      technologyId: technology._id,
+      isActive: true,
+    });
 
-    const pdfCount =
-      await Pdf.countDocuments({
-        technologyId:
-          technology._id,
-      });
+    const pdfCount = await Pdf.countDocuments({
+      technologyId: technology._id,
+    });
 
-    if (
-      folderCount > 0 ||
-      pdfCount > 0
-    ) {
+    if (folderCount > 0 || pdfCount > 0) {
       return res.status(409).json({
         success: false,
         message:
@@ -200,39 +177,30 @@ export const deleteTechnology = async (
 
     return res.status(200).json({
       success: true,
-      message:
-        "Technology deleted successfully",
+      message: "Technology deleted successfully",
     });
   } catch (error) {
-    console.error(
-      "Delete Technology Error:",
-      error
-    );
+    console.error("Delete Technology Error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to delete technology",
+      message: "Failed to delete technology",
     });
   }
 };
 
-export const getTechnologyBySlug = async (
-  req,
-  res
-) => {
+export const getTechnologyBySlug = async (req, res) => {
   try {
-    const technology =
-      await Technology.findOne({
-        slug: req.params.slug,
-        isActive: true,
-      });
+    const technology = await Technology.findOne({
+      slug: req.params.slug,
+      userId: req.user._id,
+      isActive: true,
+    });
 
     if (!technology) {
       return res.status(404).json({
         success: false,
-        message:
-          "Technology not found",
+        message: "Technology not found",
       });
     }
 
@@ -241,15 +209,11 @@ export const getTechnologyBySlug = async (
       data: technology,
     });
   } catch (error) {
-    console.error(
-      "Get Technology By Slug Error:",
-      error
-    );
+    console.error("Get Technology By Slug Error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch technology",
+      message: "Failed to fetch technology",
     });
   }
 };

@@ -1,8 +1,25 @@
 import API_BASE_URL from "./api";
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("Authentication token not found");
+  }
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+};
+
 export const getTechnologies = async () => {
   const response = await fetch(
-    `${API_BASE_URL}/technologies`
+    `${API_BASE_URL}/technologies`,
+    {
+      method: "GET",
+      headers: getAuthHeaders(),
+    }
   );
 
   const data = await response.json();
@@ -18,7 +35,11 @@ export const getTechnologies = async () => {
 
 export const getTechnologyById = async (technologyId) => {
   const response = await fetch(
-    `${API_BASE_URL}/technologies/${technologyId}`
+    `${API_BASE_URL}/technologies/${technologyId}`,
+    {
+      method: "GET",
+      headers: getAuthHeaders(),
+    }
   );
 
   const data = await response.json();
@@ -34,7 +55,11 @@ export const getTechnologyById = async (technologyId) => {
 
 export const getTechnologyBySlug = async (slug) => {
   const response = await fetch(
-    `${API_BASE_URL}/technologies/slug/${slug}`
+    `${API_BASE_URL}/technologies/slug/${slug}`,
+    {
+      method: "GET",
+      headers: getAuthHeaders(),
+    }
   );
 
   const data = await response.json();
@@ -62,9 +87,7 @@ export const createTechnology = async ({
     `${API_BASE_URL}/technologies`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         name: name.trim(),
         slug,
@@ -89,6 +112,7 @@ export const deleteTechnology = async (technologyId) => {
     `${API_BASE_URL}/technologies/${technologyId}`,
     {
       method: "DELETE",
+      headers: getAuthHeaders(),
     }
   );
 

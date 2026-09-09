@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Search,
   MessageCircleQuestion,
@@ -9,10 +9,15 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  RotateCcw,
   Filter,
   X,
 } from "lucide-react";
+import AdminNavbar from "../../components/admin/AdminNavbar";
+import {
+  getAllQuestions,
+  getQuestionById,
+  deleteQuestion,
+} from "../../api/adminApi";
 
 const AdminQuestions = () => {
   const [search, setSearch] = useState("");
@@ -21,169 +26,447 @@ const AdminQuestions = () => {
   const [dateFilter, setDateFilter] = useState("All Time");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [selectedQuestion, setSelectedQuestion] = useState(null);
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [loadingQuestion, setLoadingQuestion] = useState(false);
+  const [viewingQuestionId, setViewingQuestionId] = useState(null);
+
   const itemsPerPage = 7;
 
-  const questions = [
-    {
-      id: 1,
-      question: "What is React and why is it used?",
-      user: "John Doe",
-      email: "john@example.com",
-      technology: "React",
-      status: "Answered",
-      responseTime: "1.2 sec",
-      askedAt: "May 26, 2025 10:30 AM",
-    },
-    {
-      id: 2,
-      question: "What is the difference between Node.js and Express.js?",
-      user: "Sarah Smith",
-      email: "sarah@example.com",
-      technology: "Node.js",
-      status: "Answered",
-      responseTime: "1.5 sec",
-      askedAt: "May 26, 2025 09:45 AM",
-    },
-    {
-      id: 3,
-      question: "Explain MongoDB aggregation pipeline.",
-      user: "Michael Brown",
-      email: "michael@example.com",
-      technology: "MongoDB",
-      status: "Answered",
-      responseTime: "2.1 sec",
-      askedAt: "May 25, 2025 04:20 PM",
-    },
-    {
-      id: 4,
-      question: "What are Angular components?",
-      user: "Emily Wilson",
-      email: "emily@example.com",
-      technology: "Angular",
-      status: "Pending",
-      responseTime: "-",
-      askedAt: "May 25, 2025 02:15 PM",
-    },
-    {
-      id: 5,
-      question: "Explain Java inheritance with an example.",
-      user: "David Miller",
-      email: "david@example.com",
-      technology: "Java",
-      status: "Answered",
-      responseTime: "1.8 sec",
-      askedAt: "May 24, 2025 11:10 AM",
-    },
-    {
-      id: 6,
-      question: "What is the purpose of middleware in Express?",
-      user: "Robert Taylor",
-      email: "robert@example.com",
-      technology: "Express.js",
-      status: "Answered",
-      responseTime: "1.4 sec",
-      askedAt: "May 24, 2025 09:35 AM",
-    },
-    {
-      id: 7,
-      question: "What is the difference between SQL and NoSQL?",
-      user: "Jessica Anderson",
-      email: "jessica@example.com",
-      technology: "Database",
-      status: "Answered",
-      responseTime: "2.0 sec",
-      askedAt: "May 23, 2025 06:40 PM",
-    },
-    {
-      id: 8,
-      question: "Explain Python decorators.",
-      user: "Daniel Thomas",
-      email: "daniel@example.com",
-      technology: "Python",
-      status: "Pending",
-      responseTime: "-",
-      askedAt: "May 23, 2025 04:20 PM",
-    },
-    {
-      id: 9,
-      question: "What is machine learning?",
-      user: "Olivia Martin",
-      email: "olivia@example.com",
-      technology: "Machine Learning",
-      status: "Answered",
-      responseTime: "1.7 sec",
-      askedAt: "May 22, 2025 01:25 PM",
-    },
-    {
-      id: 10,
-      question: "What is RAG in Generative AI?",
-      user: "James White",
-      email: "james@example.com",
-      technology: "AI",
-      status: "Answered",
-      responseTime: "2.3 sec",
-      askedAt: "May 22, 2025 10:15 AM",
-    },
-    {
-      id: 11,
-      question: "Explain vector embeddings.",
-      user: "Sophia Harris",
-      email: "sophia@example.com",
-      technology: "AI",
-      status: "Answered",
-      responseTime: "2.4 sec",
-      askedAt: "May 21, 2025 03:45 PM",
-    },
-    {
-      id: 12,
-      question: "What is the difference between AI and ML?",
-      user: "William Clark",
-      email: "william@example.com",
-      technology: "Machine Learning",
-      status: "Pending",
-      responseTime: "-",
-      askedAt: "May 21, 2025 11:30 AM",
-    },
-  ];
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  const fetchQuestions = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await getAllQuestions();
+
+      const questionData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.questions)
+        ? response.data.questions
+        : Array.isArray(response?.questions)
+        ? response.questions
+        : [];
+
+      setQuestions(questionData);
+    } catch (err) {
+      console.error("Fetch Questions Error:", err);
+      setError(err.message || "Failed to fetch questions");
+      setQuestions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getUserName = (item) => {
+    if (item?.userId?.name) {
+      return item.userId.name;
+    }
+
+    if (item?.user?.name) {
+      return item.user.name;
+    }
+
+    if (item?.userName) {
+      return item.userName;
+    }
+
+    if (item?.name) {
+      return item.name;
+    }
+
+    return "Unknown User";
+  };
+
+  const getUserEmail = (item) => {
+    if (item?.userId?.email) {
+      return item.userId.email;
+    }
+
+    if (item?.user?.email) {
+      return item.user.email;
+    }
+
+    if (item?.userEmail) {
+      return item.userEmail;
+    }
+
+    if (item?.email) {
+      return item.email;
+    }
+
+    return "—";
+  };
+
+  const getTechnologyName = (item) => {
+    if (item?.technologyId?.name) {
+      return item.technologyId.name;
+    }
+
+    if (item?.technology?.name) {
+      return item.technology.name;
+    }
+
+    if (item?.technologyName) {
+      return item.technologyName;
+    }
+
+    if (typeof item?.technology === "string") {
+      return item.technology;
+    }
+
+    return "General";
+  };
+
+  const getFolderName = (item) => {
+    if (item?.folderId?.name) {
+      return item.folderId.name;
+    }
+
+    if (item?.folder?.name) {
+      return item.folder.name;
+    }
+
+    if (item?.folderName) {
+      return item.folderName;
+    }
+
+    return "—";
+  };
+
+  const getQuestionText = (item) => {
+    return (
+      item?.question ||
+      item?.questionText ||
+      item?.query ||
+      item?.text ||
+      item?.prompt ||
+      item?.questionContent ||
+      "No question available"
+    );
+  };
+
+  const getAnswerText = (item) => {
+    return (
+      item?.answer ||
+      item?.response ||
+      item?.aiResponse ||
+      item?.aiAnswer ||
+      item?.responseText ||
+      item?.generatedAnswer ||
+      item?.answerText ||
+      ""
+    );
+  };
+
+  const getQuestionStatus = (item) => {
+    if (item?.status) {
+      const normalizedStatus = String(item.status).toLowerCase();
+
+      if (
+        normalizedStatus === "answered" ||
+        normalizedStatus === "completed" ||
+        normalizedStatus === "success"
+      ) {
+        return "Answered";
+      }
+
+      if (
+        normalizedStatus === "pending" ||
+        normalizedStatus === "processing"
+      ) {
+        return "Pending";
+      }
+    }
+
+    const answer = getAnswerText(item);
+
+    if (answer && String(answer).trim()) {
+      return "Answered";
+    }
+
+    return "Pending";
+  };
+
+  const getResponseTime = (item) => {
+    if (
+      item?.responseTime !== undefined &&
+      item?.responseTime !== null &&
+      item?.responseTime !== ""
+    ) {
+      if (typeof item.responseTime === "number") {
+        return `${item.responseTime.toFixed(1)} sec`;
+      }
+
+      if (typeof item.responseTime === "string") {
+        if (item.responseTime.toLowerCase().includes("sec")) {
+          return item.responseTime;
+        }
+
+        const value = Number(item.responseTime);
+
+        if (Number.isFinite(value)) {
+          return `${value.toFixed(1)} sec`;
+        }
+      }
+
+      return item.responseTime;
+    }
+
+    if (
+      item?.responseTimeMs !== undefined &&
+      item?.responseTimeMs !== null
+    ) {
+      const value = Number(item.responseTimeMs);
+
+      if (Number.isFinite(value)) {
+        return `${(value / 1000).toFixed(1)} sec`;
+      }
+    }
+
+    if (
+      item?.processingTime !== undefined &&
+      item?.processingTime !== null
+    ) {
+      const value = Number(item.processingTime);
+
+      if (Number.isFinite(value)) {
+        return `${value.toFixed(1)} sec`;
+      }
+    }
+
+    return "—";
+  };
+
+  const getResponseTimeNumber = (item) => {
+    if (
+      item?.responseTime !== undefined &&
+      item?.responseTime !== null &&
+      item?.responseTime !== ""
+    ) {
+      if (typeof item.responseTime === "number") {
+        return item.responseTime;
+      }
+
+      if (typeof item.responseTime === "string") {
+        const match = item.responseTime.match(/[\d.]+/);
+
+        if (match) {
+          const value = Number(match[0]);
+
+          if (Number.isFinite(value)) {
+            return value;
+          }
+        }
+      }
+    }
+
+    if (
+      item?.responseTimeMs !== undefined &&
+      item?.responseTimeMs !== null
+    ) {
+      const value = Number(item.responseTimeMs);
+
+      if (Number.isFinite(value)) {
+        return value / 1000;
+      }
+    }
+
+    if (
+      item?.processingTime !== undefined &&
+      item?.processingTime !== null
+    ) {
+      const value = Number(item.processingTime);
+
+      if (Number.isFinite(value)) {
+        return value;
+      }
+    }
+
+    return null;
+  };
+
+  const getAskedAt = (item) => {
+    const rawDate =
+      item?.createdAt ||
+      item?.askedAt ||
+      item?.created_at ||
+      item?.updatedAt;
+
+    if (!rawDate) {
+      return "—";
+    }
+
+    const date = new Date(rawDate);
+
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getQuestionDate = (item) => {
+    const rawDate =
+      item?.createdAt ||
+      item?.askedAt ||
+      item?.created_at ||
+      item?.updatedAt;
+
+    if (!rawDate) {
+      return null;
+    }
+
+    const date = new Date(rawDate);
+
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    return date;
+  };
+
+  const technologyOptions = useMemo(() => {
+    const values = questions
+      .map((item) => getTechnologyName(item))
+      .filter(
+        (value) =>
+          value &&
+          value !== "General" &&
+          value !== "—"
+      );
+
+    return ["All Technologies", ...new Set(values)];
+  }, [questions]);
+
+  const normalizedQuestions = useMemo(() => {
+    return questions.map((item) => ({
+      ...item,
+      displayId: item?._id || item?.id,
+      displayQuestion: getQuestionText(item),
+      displayUser: getUserName(item),
+      displayEmail: getUserEmail(item),
+      displayTechnology: getTechnologyName(item),
+      displayFolder: getFolderName(item),
+      displayStatus: getQuestionStatus(item),
+      displayResponseTime: getResponseTime(item),
+      displayAskedAt: getAskedAt(item),
+      questionDate: getQuestionDate(item),
+      displayAnswer: getAnswerText(item),
+    }));
+  }, [questions]);
 
   const filteredQuestions = useMemo(() => {
-    return questions.filter((item) => {
-      const searchValue = search.toLowerCase();
+    const now = new Date();
+
+    return normalizedQuestions.filter((item) => {
+      const searchValue = search.trim().toLowerCase();
 
       const matchesSearch =
-        item.question.toLowerCase().includes(searchValue) ||
-        item.user.toLowerCase().includes(searchValue) ||
-        item.technology.toLowerCase().includes(searchValue);
+        !searchValue ||
+        String(item.displayQuestion)
+          .toLowerCase()
+          .includes(searchValue) ||
+        String(item.displayUser)
+          .toLowerCase()
+          .includes(searchValue) ||
+        String(item.displayEmail)
+          .toLowerCase()
+          .includes(searchValue) ||
+        String(item.displayTechnology)
+          .toLowerCase()
+          .includes(searchValue);
 
       const matchesTechnology =
         technology === "All Technologies" ||
-        item.technology === technology;
+        item.displayTechnology === technology;
 
       const matchesStatus =
-        status === "All Status" || item.status === status;
+        status === "All Status" ||
+        item.displayStatus === status;
 
-      return matchesSearch && matchesTechnology && matchesStatus;
+      let matchesDate = true;
+
+      if (item.questionDate) {
+        if (dateFilter === "Today") {
+          matchesDate =
+            item.questionDate.toDateString() ===
+            now.toDateString();
+        }
+
+        if (dateFilter === "This Week") {
+          const weekStart = new Date(now);
+          const day = weekStart.getDay();
+
+          weekStart.setDate(
+            weekStart.getDate() -
+              (day === 0 ? 6 : day - 1)
+          );
+
+          weekStart.setHours(0, 0, 0, 0);
+
+          matchesDate =
+            item.questionDate >= weekStart;
+        }
+
+        if (dateFilter === "This Month") {
+          matchesDate =
+            item.questionDate.getMonth() ===
+              now.getMonth() &&
+            item.questionDate.getFullYear() ===
+              now.getFullYear();
+        }
+      }
+
+      return (
+        matchesSearch &&
+        matchesTechnology &&
+        matchesStatus &&
+        matchesDate
+      );
     });
-  }, [search, technology, status]);
+  }, [
+    normalizedQuestions,
+    search,
+    technology,
+    status,
+    dateFilter,
+  ]);
 
   const totalPages = Math.ceil(
     filteredQuestions.length / itemsPerPage
   );
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const safeTotalPages = Math.max(totalPages, 1);
 
-  const paginatedQuestions = filteredQuestions.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const startIndex =
+    (currentPage - 1) * itemsPerPage;
 
-  const resetFilters = () => {
-    setSearch("");
-    setTechnology("All Technologies");
-    setStatus("All Status");
-    setDateFilter("All Time");
-    setCurrentPage(1);
-  };
+  const paginatedQuestions =
+    filteredQuestions.slice(
+      startIndex,
+      startIndex + itemsPerPage
+    );
+
+  useEffect(() => {
+    if (currentPage > safeTotalPages) {
+      setCurrentPage(safeTotalPages);
+    }
+  }, [currentPage, safeTotalPages]);
 
   const handleSearch = (value) => {
     setSearch(value);
@@ -200,18 +483,174 @@ const AdminQuestions = () => {
     setCurrentPage(1);
   };
 
+  const handleDateFilter = (value) => {
+    setDateFilter(value);
+    setCurrentPage(1);
+  };
+
   const answeredCount = questions.filter(
-    (item) => item.status === "Answered"
+    (item) =>
+      getQuestionStatus(item) === "Answered"
   ).length;
 
   const pendingCount = questions.filter(
-    (item) => item.status === "Pending"
+    (item) =>
+      getQuestionStatus(item) === "Pending"
   ).length;
 
-  const averageResponse = "1.8 sec";
+  const responseTimes = questions
+    .map((item) => getResponseTimeNumber(item))
+    .filter(
+      (value) =>
+        value !== null &&
+        Number.isFinite(value)
+    );
+
+  const averageResponse =
+    responseTimes.length > 0
+      ? `${(
+          responseTimes.reduce(
+            (sum, value) => sum + value,
+            0
+          ) / responseTimes.length
+        ).toFixed(1)} sec`
+      : "—";
+
+  const handleViewQuestion = async (id) => {
+    if (!id) {
+      window.alert("Question ID is not available.");
+      return;
+    }
+
+    try {
+      setViewingQuestionId(id);
+      setLoadingQuestion(true);
+      setShowQuestionModal(true);
+      setSelectedQuestion(null);
+
+      const response = await getQuestionById(id);
+
+      console.log(
+        "QUESTION DETAILS RESPONSE:",
+        response
+      );
+
+      let questionData = null;
+
+      if (response?.data?.question) {
+        questionData = response.data.question;
+      } else if (response?.data?.data) {
+        questionData = response.data.data;
+      } else if (
+        response?.data &&
+        typeof response.data === "object" &&
+        !Array.isArray(response.data)
+      ) {
+        questionData = response.data;
+      } else if (response?.question) {
+        questionData = response.question;
+      }
+
+      if (!questionData) {
+        throw new Error(
+          "Question details are empty."
+        );
+      }
+
+      console.log(
+        "QUESTION DATA:",
+        questionData
+      );
+
+      setSelectedQuestion(questionData);
+    } catch (err) {
+      console.error(
+        "View Question Error:",
+        err
+      );
+
+      window.alert(
+        err.message ||
+          "Failed to load question details."
+      );
+
+      setShowQuestionModal(false);
+      setSelectedQuestion(null);
+    } finally {
+      setLoadingQuestion(false);
+      setViewingQuestionId(null);
+    }
+  };
+
+  const closeQuestionModal = () => {
+    setShowQuestionModal(false);
+    setSelectedQuestion(null);
+    setViewingQuestionId(null);
+    setLoadingQuestion(false);
+  };
+
+  const handleDeleteQuestion = async (item) => {
+    const id = item?._id || item?.id;
+
+    if (!id) {
+      window.alert(
+        "Question ID is not available."
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this question?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteQuestion(id);
+
+      setQuestions((prev) =>
+        prev.filter(
+          (question) =>
+            (question?._id || question?.id) !== id
+        )
+      );
+
+      if (
+        paginatedQuestions.length === 1 &&
+        currentPage > 1
+      ) {
+        setCurrentPage((prev) =>
+          Math.max(prev - 1, 1)
+        );
+      }
+    } catch (err) {
+      console.error(
+        "Delete Question Error:",
+        err
+      );
+
+      window.alert(
+        err.message ||
+          "Failed to delete question."
+      );
+    }
+  };
+
+  const goToPage = (pageNumber) => {
+    if (
+      pageNumber >= 1 &&
+      pageNumber <= safeTotalPages
+    ) {
+      setCurrentPage(pageNumber);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
+      <AdminNavbar />
+
       <main className="w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-10">
         <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-500">
           <span>Dashboard</span>
@@ -221,7 +660,7 @@ const AdminQuestions = () => {
           </span>
         </div>
 
-        <div className="mb-7 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mb-7">
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Questions
@@ -231,15 +670,20 @@ const AdminQuestions = () => {
               Manage and monitor questions asked by users.
             </p>
           </div>
-
-          <button
-            onClick={resetFilters}
-            className="inline-flex w-fit items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            <RotateCcw size={17} />
-            Reset Filters
-          </button>
         </div>
+
+        {error && (
+          <div className="mb-6 flex items-center justify-between gap-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{error}</span>
+
+            <button
+              onClick={fetchQuestions}
+              className="cursor-pointer font-semibold underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         <section className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -250,11 +694,11 @@ const AdminQuestions = () => {
                 </p>
 
                 <h2 className="mt-2 text-3xl font-bold">
-                  {questions.length}
+                  {loading ? "—" : questions.length}
                 </h2>
 
                 <p className="mt-3 text-sm text-emerald-600">
-                  ↑ 186 this month
+                  All user questions
                 </p>
               </div>
 
@@ -275,11 +719,11 @@ const AdminQuestions = () => {
                 </p>
 
                 <h2 className="mt-2 text-3xl font-bold">
-                  {answeredCount}
+                  {loading ? "—" : answeredCount}
                 </h2>
 
                 <p className="mt-3 text-sm text-emerald-600">
-                  ↑ 12% this month
+                  Questions with responses
                 </p>
               </div>
 
@@ -300,7 +744,7 @@ const AdminQuestions = () => {
                 </p>
 
                 <h2 className="mt-2 text-3xl font-bold">
-                  {pendingCount}
+                  {loading ? "—" : pendingCount}
                 </h2>
 
                 <p className="mt-3 text-sm text-orange-600">
@@ -325,11 +769,11 @@ const AdminQuestions = () => {
                 </p>
 
                 <h2 className="mt-2 text-3xl font-bold">
-                  {averageResponse}
+                  {loading ? "—" : averageResponse}
                 </h2>
 
                 <p className="mt-3 text-sm text-emerald-600">
-                  ↓ 0.3 sec faster
+                  Based on available response data
                 </p>
               </div>
 
@@ -345,7 +789,10 @@ const AdminQuestions = () => {
 
         <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-4 flex items-center gap-2">
-            <Filter size={18} className="text-blue-600" />
+            <Filter
+              size={18}
+              className="text-blue-600"
+            />
 
             <h2 className="font-semibold">
               Search & Filters
@@ -356,21 +803,26 @@ const AdminQuestions = () => {
             <div className="relative xl:col-span-2">
               <Search
                 size={19}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               />
 
               <input
                 type="text"
                 value={search}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) =>
+                  handleSearch(e.target.value)
+                }
                 placeholder="Search questions, users..."
                 className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-10 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
 
               {search && (
                 <button
-                  onClick={() => handleSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  type="button"
+                  onClick={() =>
+                    handleSearch("")
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-slate-700"
                 >
                   <X size={17} />
                 </button>
@@ -382,19 +834,13 @@ const AdminQuestions = () => {
               onChange={(e) =>
                 handleTechnology(e.target.value)
               }
-              className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="h-11 cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
-              <option>All Technologies</option>
-              <option>React</option>
-              <option>Node.js</option>
-              <option>MongoDB</option>
-              <option>Angular</option>
-              <option>Java</option>
-              <option>Express.js</option>
-              <option>Python</option>
-              <option>AI</option>
-              <option>Machine Learning</option>
-              <option>Database</option>
+              {technologyOptions.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
             </select>
 
             <select
@@ -402,7 +848,7 @@ const AdminQuestions = () => {
               onChange={(e) =>
                 handleStatus(e.target.value)
               }
-              className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="h-11 cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
               <option>All Status</option>
               <option>Answered</option>
@@ -412,9 +858,9 @@ const AdminQuestions = () => {
             <select
               value={dateFilter}
               onChange={(e) =>
-                setDateFilter(e.target.value)
+                handleDateFilter(e.target.value)
               }
-              className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="h-11 cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
               <option>All Time</option>
               <option>Today</option>
@@ -446,34 +892,17 @@ const AdminQuestions = () => {
             <table className="w-full min-w-[1050px] border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/70 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <th className="px-5 py-4">
-                    #
-                  </th>
-
-                  <th className="px-5 py-4">
-                    Question
-                  </th>
-
-                  <th className="px-5 py-4">
-                    User
-                  </th>
-
+                  <th className="px-5 py-4">#</th>
+                  <th className="px-5 py-4">Question</th>
+                  <th className="px-5 py-4">User</th>
                   <th className="px-5 py-4">
                     Technology
                   </th>
-
-                  <th className="px-5 py-4">
-                    Status
-                  </th>
-
-                  <th className="px-5 py-4">
-                    Response
-                  </th>
-
+                  <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4">Response</th>
                   <th className="px-5 py-4">
                     Asked At
                   </th>
-
                   <th className="px-5 py-4 text-right">
                     Actions
                   </th>
@@ -481,84 +910,115 @@ const AdminQuestions = () => {
               </thead>
 
               <tbody>
-                {paginatedQuestions.length > 0 ? (
-                  paginatedQuestions.map((item, index) => (
-                    <tr
-                      key={item.id}
-                      className="border-b border-slate-100 transition hover:bg-slate-50/70"
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan="8"
+                      className="px-5 py-14 text-center text-sm text-slate-500"
                     >
-                      <td className="px-5 py-4 text-sm text-slate-500">
-                        {startIndex + index + 1}
-                      </td>
+                      Loading questions...
+                    </td>
+                  </tr>
+                ) : paginatedQuestions.length > 0 ? (
+                  paginatedQuestions.map(
+                    (item, index) => (
+                      <tr
+                        key={
+                          item.displayId ||
+                          `${item.displayQuestion}-${index}`
+                        }
+                        className="border-b border-slate-100 transition hover:bg-slate-50/70"
+                      >
+                        <td className="px-5 py-4 text-sm text-slate-500">
+                          {startIndex + index + 1}
+                        </td>
 
-                      <td className="max-w-[330px] px-5 py-4">
-                        <p
-                          className="truncate text-sm font-semibold text-slate-800"
-                          title={item.question}
-                        >
-                          {item.question}
-                        </p>
-                      </td>
-
-                      <td className="px-5 py-4">
-                        <div>
-                          <p className="text-sm font-medium text-slate-800">
-                            {item.user}
-                          </p>
-
-                          <p className="mt-0.5 text-xs text-slate-400">
-                            {item.email}
-                          </p>
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-4">
-                        <span className="inline-flex rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                          {item.technology}
-                        </span>
-                      </td>
-
-                      <td className="px-5 py-4">
-                        {item.status === "Answered" ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                            Answered
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                            Pending
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-5 py-4 text-sm text-slate-600">
-                        {item.responseTime}
-                      </td>
-
-                      <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-500">
-                        {item.askedAt}
-                      </td>
-
-                      <td className="px-5 py-4">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            title="View Question"
-                            className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition hover:bg-blue-100"
+                        <td className="max-w-[330px] px-5 py-4">
+                          <p
+                            className="truncate text-sm font-semibold text-slate-800"
+                            title={item.displayQuestion}
                           >
-                            <Eye size={17} />
-                          </button>
+                            {item.displayQuestion}
+                          </p>
+                        </td>
 
-                          <button
-                            title="Delete Question"
-                            className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-500 transition hover:bg-red-100"
-                          >
-                            <Trash2 size={17} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="px-5 py-4">
+                          <div>
+                            <p className="text-sm font-medium text-slate-800">
+                              {item.displayUser}
+                            </p>
+
+                            <p className="mt-0.5 text-xs text-slate-400">
+                              {item.displayEmail}
+                            </p>
+                          </div>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <span className="inline-flex rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                            {item.displayTechnology}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          {item.displayStatus ===
+                          "Answered" ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                              Answered
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
+                              <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                              Pending
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4 text-sm text-slate-600">
+                          {item.displayResponseTime}
+                        </td>
+
+                        <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-500">
+                          {item.displayAskedAt}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              title="View Question"
+                              disabled={
+                                viewingQuestionId ===
+                                item.displayId
+                              }
+                              onClick={() =>
+                                handleViewQuestion(
+                                  item.displayId
+                                )
+                              }
+                              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition hover:bg-blue-100 disabled:cursor-wait disabled:opacity-50"
+                            >
+                              <Eye size={17} />
+                            </button>
+
+                            <button
+                              type="button"
+                              title="Delete Question"
+                              onClick={() =>
+                                handleDeleteQuestion(
+                                  item
+                                )
+                              }
+                              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-red-50 text-red-500 transition hover:bg-red-100"
+                            >
+                              <Trash2 size={17} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  )
                 ) : (
                   <tr>
                     <td
@@ -578,7 +1038,8 @@ const AdminQuestions = () => {
                         </h3>
 
                         <p className="mt-1 text-sm text-slate-400">
-                          Try changing your search or filters.
+                          Try changing your search or
+                          filters.
                         </p>
                       </div>
                     </td>
@@ -589,89 +1050,117 @@ const AdminQuestions = () => {
           </div>
 
           <div className="divide-y divide-slate-100 md:hidden">
-            {paginatedQuestions.length > 0 ? (
-              paginatedQuestions.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-slate-400">
-                        #{startIndex + index + 1}
-                      </p>
+            {loading ? (
+              <div className="px-5 py-14 text-center text-sm text-slate-500">
+                Loading questions...
+              </div>
+            ) : paginatedQuestions.length > 0 ? (
+              paginatedQuestions.map(
+                (item, index) => (
+                  <div
+                    key={
+                      item.displayId ||
+                      `${item.displayQuestion}-${index}`
+                    }
+                    className="p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-slate-400">
+                          #{startIndex + index + 1}
+                        </p>
 
-                      <h3 className="mt-1 text-sm font-semibold leading-5 text-slate-800">
-                        {item.question}
-                      </h3>
+                        <h3 className="mt-1 text-sm font-semibold leading-5 text-slate-800">
+                          {item.displayQuestion}
+                        </h3>
+                      </div>
+
+                      {item.displayStatus ===
+                      "Answered" ? (
+                        <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                          Answered
+                        </span>
+                      ) : (
+                        <span className="shrink-0 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700">
+                          Pending
+                        </span>
+                      )}
                     </div>
 
-                    {item.status === "Answered" ? (
-                      <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                        Answered
-                      </span>
-                    ) : (
-                      <span className="shrink-0 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700">
-                        Pending
-                      </span>
-                    )}
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-slate-400">
+                          User
+                        </p>
+
+                        <p className="mt-1 font-medium text-slate-700">
+                          {item.displayUser}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-400">
+                          Technology
+                        </p>
+
+                        <span className="mt-1 inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                          {item.displayTechnology}
+                        </span>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-400">
+                          Response
+                        </p>
+
+                        <p className="mt-1 font-medium text-slate-700">
+                          {item.displayResponseTime}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-400">
+                          Asked At
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-600">
+                          {item.displayAskedAt}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        type="button"
+                        disabled={
+                          viewingQuestionId ===
+                          item.displayId
+                        }
+                        onClick={() =>
+                          handleViewQuestion(
+                            item.displayId
+                          )
+                        }
+                        className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-100 disabled:cursor-wait disabled:opacity-50"
+                      >
+                        <Eye size={16} />
+                        View
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDeleteQuestion(item)
+                        }
+                        className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-100"
+                      >
+                        <Trash2 size={16} />
+                        Delete
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-xs text-slate-400">
-                        User
-                      </p>
-
-                      <p className="mt-1 font-medium text-slate-700">
-                        {item.user}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-slate-400">
-                        Technology
-                      </p>
-
-                      <span className="mt-1 inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
-                        {item.technology}
-                      </span>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-slate-400">
-                        Response
-                      </p>
-
-                      <p className="mt-1 font-medium text-slate-700">
-                        {item.responseTime}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-slate-400">
-                        Asked At
-                      </p>
-
-                      <p className="mt-1 text-xs text-slate-600">
-                        {item.askedAt}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex gap-2">
-                    <button className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-100">
-                      <Eye size={16} />
-                      View
-                    </button>
-
-                    <button className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-100">
-                      <Trash2 size={16} />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))
+                )
+              )
             ) : (
               <div className="px-5 py-14 text-center">
                 <MessageCircleQuestion
@@ -714,51 +1203,61 @@ const AdminQuestions = () => {
 
             <div className="flex items-center justify-end gap-1">
               <button
+                type="button"
                 disabled={currentPage === 1}
                 onClick={() =>
-                  setCurrentPage((prev) =>
-                    Math.max(prev - 1, 1)
-                  )
+                  goToPage(currentPage - 1)
                 }
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className={`flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition ${
+                  currentPage === 1
+                    ? "cursor-not-allowed opacity-40"
+                    : "cursor-pointer hover:bg-slate-50"
+                }`}
+                title="Previous Page"
               >
                 <ChevronLeft size={17} />
               </button>
 
               {Array.from(
-                { length: Math.max(totalPages, 1) },
+                {
+                  length: safeTotalPages,
+                },
                 (_, index) => index + 1
-              ).map((page) => (
+              ).map((pageNumber) => (
                 <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`hidden h-9 min-w-9 items-center justify-center rounded-lg px-2 text-sm font-medium sm:flex ${
-                    currentPage === page
+                  type="button"
+                  key={pageNumber}
+                  onClick={() =>
+                    goToPage(pageNumber)
+                  }
+                  className={`hidden h-9 min-w-9 cursor-pointer items-center justify-center rounded-lg px-2 text-sm font-medium sm:flex ${
+                    currentPage === pageNumber
                       ? "bg-blue-600 text-white"
                       : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  {page}
+                  {pageNumber}
                 </button>
               ))}
 
               <span className="px-2 text-sm text-slate-500 sm:hidden">
-                {currentPage} / {Math.max(totalPages, 1)}
+                {currentPage} / {safeTotalPages}
               </span>
 
               <button
+                type="button"
                 disabled={
-                  currentPage >= Math.max(totalPages, 1)
+                  currentPage >= safeTotalPages
                 }
                 onClick={() =>
-                  setCurrentPage((prev) =>
-                    Math.min(
-                      prev + 1,
-                      Math.max(totalPages, 1)
-                    )
-                  )
+                  goToPage(currentPage + 1)
                 }
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className={`flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition ${
+                  currentPage >= safeTotalPages
+                    ? "cursor-not-allowed opacity-40"
+                    : "cursor-pointer hover:bg-slate-50"
+                }`}
+                title="Next Page"
               >
                 <ChevronRight size={17} />
               </button>
@@ -766,6 +1265,200 @@ const AdminQuestions = () => {
           </div>
         </section>
       </main>
+
+      {showQuestionModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          onClick={closeQuestionModal}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+            {loadingQuestion ? (
+              <div className="flex min-h-[300px] items-center justify-center">
+                <div className="flex flex-col items-center">
+                  <div className="h-9 w-9 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
+
+                  <p className="mt-4 text-sm font-medium text-slate-500">
+                    Loading question details...
+                  </p>
+                </div>
+              </div>
+            ) : selectedQuestion ? (
+              <>
+                <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800">
+                      Question Details
+                    </h2>
+
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      {getAskedAt(
+                        selectedQuestion
+                      )}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={closeQuestionModal}
+                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  >
+                    <X size={19} />
+                  </button>
+                </div>
+
+                <div className="space-y-5 p-5">
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      User
+                    </p>
+
+                    <div className="rounded-lg bg-slate-50 p-3">
+                      <p className="font-semibold text-slate-800">
+                        {getUserName(
+                          selectedQuestion
+                        )}
+                      </p>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        {getUserEmail(
+                          selectedQuestion
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Technology
+                    </p>
+
+                    <span className="inline-flex rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700">
+                      {getTechnologyName(
+                        selectedQuestion
+                      )}
+                    </span>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Question
+                    </p>
+
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                        {getQuestionText(
+                          selectedQuestion
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      AI Response
+                    </p>
+
+                    <div className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-4">
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                        {getAnswerText(
+                          selectedQuestion
+                        ) ||
+                          "No response available"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-slate-400">
+                        Status
+                      </p>
+
+                      <p
+                        className={`mt-1 text-sm font-semibold ${
+                          getQuestionStatus(
+                            selectedQuestion
+                          ) === "Answered"
+                            ? "text-emerald-600"
+                            : "text-orange-600"
+                        }`}
+                      >
+                        {getQuestionStatus(
+                          selectedQuestion
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">
+                        Response Time
+                      </p>
+
+                      <p className="mt-1 text-sm font-medium text-slate-700">
+                        {getResponseTime(
+                          selectedQuestion
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">
+                        Folder
+                      </p>
+
+                      <p className="mt-1 text-sm font-medium text-slate-700">
+                        {getFolderName(
+                          selectedQuestion
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">
+                        Asked At
+                      </p>
+
+                      <p className="mt-1 text-sm font-medium text-slate-700">
+                        {getAskedAt(
+                          selectedQuestion
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex min-h-[300px] flex-col items-center justify-center px-5 text-center">
+                <MessageCircleQuestion
+                  size={40}
+                  className="text-slate-300"
+                />
+
+                <p className="mt-3 font-semibold text-slate-700">
+                  Question details not available
+                </p>
+
+                <p className="mt-1 text-sm text-slate-400">
+                  Unable to load the selected question.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={closeQuestionModal}
+                  className="mt-5 cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

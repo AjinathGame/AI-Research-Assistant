@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 const questionSchema = new mongoose.Schema(
   {
     userId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
       index: true,
     },
@@ -25,15 +26,27 @@ const questionSchema = new mongoose.Schema(
       ref: "Folder",
       required: false,
     },
+    answer: {
+      type: String,
+      default: "",
+    },
+
+    status: {
+      type: String,
+      enum: ["Pending", "Answered"],
+      default: "Pending",
+    },
+
+    responseTime: {
+      type: Number,
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-const Question = mongoose.model(
-  "Question",
-  questionSchema
-);
+const Question = mongoose.model("Question", questionSchema);
 
 export default Question;

@@ -1,5 +1,17 @@
 import API_BASE_URL from "./api";
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("Authentication token not found");
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+};
+
 export const uploadPdf = async ({
   file,
   technologyId,
@@ -17,6 +29,7 @@ export const uploadPdf = async ({
     `${API_BASE_URL}/pdf/upload`,
     {
       method: "POST",
+      headers: getAuthHeaders(),
       body: formData,
     }
   );
@@ -34,7 +47,14 @@ export const uploadPdf = async ({
 
 export const getPdfList = async () => {
   const response = await fetch(
-    `${API_BASE_URL}/pdf`
+    `${API_BASE_URL}/pdf`,
+    {
+      method: "GET",
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "application/json",
+      },
+    }
   );
 
   const data = await response.json();
@@ -50,7 +70,14 @@ export const getPdfList = async () => {
 
 export const getPdfsByFolder = async (folderId) => {
   const response = await fetch(
-    `${API_BASE_URL}/pdf/folder/${folderId}`
+    `${API_BASE_URL}/pdf/folder/${folderId}`,
+    {
+      method: "GET",
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "application/json",
+      },
+    }
   );
 
   const data = await response.json();
@@ -69,6 +96,10 @@ export const deletePdf = async (pdfId) => {
     `${API_BASE_URL}/pdf/${pdfId}`,
     {
       method: "DELETE",
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "application/json",
+      },
     }
   );
 
@@ -89,6 +120,7 @@ export const getDashboardStats = async () => {
     {
       method: "GET",
       headers: {
+        ...getAuthHeaders(),
         "Content-Type": "application/json",
       },
     }
@@ -98,7 +130,8 @@ export const getDashboardStats = async () => {
 
   if (!response.ok) {
     throw new Error(
-      data.message || "Failed to load dashboard statistics"
+      data.message ||
+        "Failed to load dashboard statistics"
     );
   }
 

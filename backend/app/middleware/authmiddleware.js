@@ -7,12 +7,14 @@ export const protect = async (req, res, next) => {
 
     if (!authHeader) {
       return res.status(401).json({
+        success: false,
         message: "Authorization header is missing",
       });
     }
 
     if (!authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
+        success: false,
         message: "Invalid authorization format. Use Bearer token",
       });
     }
@@ -21,6 +23,7 @@ export const protect = async (req, res, next) => {
 
     if (!token) {
       return res.status(401).json({
+        success: false,
         message: "Token is missing",
       });
     }
@@ -29,6 +32,7 @@ export const protect = async (req, res, next) => {
       console.error("JWT_SECRET is not configured");
 
       return res.status(500).json({
+        success: false,
         message: "JWT configuration error",
       });
     }
@@ -39,12 +43,20 @@ export const protect = async (req, res, next) => {
     );
 
     const user = await User.findById(decoded.id).select(
-      "_id name email authProvider isVerified"
+      "_id name email role authProvider isVerified isActive"
     );
 
     if (!user) {
       return res.status(401).json({
+        success: false,
         message: "User not found",
+      });
+    }
+
+    if (user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been deactivated",
       });
     }
 
@@ -56,18 +68,22 @@ export const protect = async (req, res, next) => {
 
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({
+        success: false,
         message: "Token has expired. Please login again",
       });
     }
 
     if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
+        success: false,
         message: "Invalid token",
       });
     }
 
     return res.status(401).json({
+      success: false,
       message: "Authentication failed",
     });
   }
 };
+

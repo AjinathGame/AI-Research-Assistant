@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FileText,
   BookOpen,
@@ -11,145 +11,690 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  X,
 } from "lucide-react";
 
+import AdminNavbar from "../../components/admin/AdminNavbar";
+import Footer from "../../components/Home/Footer";
+import { getAllPdfs, deletePdf } from "../../api/adminApi";
+
+const ITEMS_PER_PAGE = 8;
+
 const AdminDocuments = () => {
+  const [documents, setDocuments] = useState([]);
+
+  const [statistics, setStatistics] = useState({
+    totalDocuments: 0,
+    totalPages: 0,
+    totalChunks: 0,
+    activeDocuments: 0,
+  });
+
   const [search, setSearch] = useState("");
   const [technology, setTechnology] = useState("All Technologies");
   const [status, setStatus] = useState("All Status");
+
   const [currentPage, setCurrentPage] = useState(1);
 
-  const documents = [
-    {
-      id: 1,
-      name: "React Hooks Guide.pdf",
-      technology: "React",
-      folder: "Frontend",
-      pages: 156,
-      chunks: 456,
-      uploadedBy: "John Doe",
-      uploadedAt: "May 26, 2025",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "JavaScript ES6.pdf",
-      technology: "JavaScript",
-      folder: "Frontend",
-      pages: 124,
-      chunks: 378,
-      uploadedBy: "Jane Smith",
-      uploadedAt: "May 25, 2025",
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "Node.js Backend Guide.pdf",
-      technology: "Node.js",
-      folder: "Backend",
-      pages: 210,
-      chunks: 654,
-      uploadedBy: "Admin",
-      uploadedAt: "May 24, 2025",
-      status: "Active",
-    },
-    {
-      id: 4,
-      name: "MongoDB Fundamentals.pdf",
-      technology: "MongoDB",
-      folder: "Database",
-      pages: 185,
-      chunks: 521,
-      uploadedBy: "Admin",
-      uploadedAt: "May 23, 2025",
-      status: "Active",
-    },
-    {
-      id: 5,
-      name: "Python Programming.pdf",
-      technology: "Python",
-      folder: "Programming",
-      pages: 242,
-      chunks: 712,
-      uploadedBy: "John Doe",
-      uploadedAt: "May 22, 2025",
-      status: "Inactive",
-    },
-    {
-      id: 6,
-      name: "Machine Learning Introduction.pdf",
-      technology: "Machine Learning",
-      folder: "AI / ML",
-      pages: 198,
-      chunks: 589,
-      uploadedBy: "Admin",
-      uploadedAt: "May 21, 2025",
-      status: "Active",
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const technologies = [
-    "All Technologies",
-    ...new Set(documents.map((doc) => doc.technology)),
-  ];
+  const [deletingId, setDeletingId] = useState(null);
 
-  const statuses = ["All Status", "Active", "Inactive"];
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await getAllPdfs();
+      const responseData = response?.data;
+
+      let pdfList = [];
+
+      if (Array.isArray(responseData)) {
+        pdfList = responseData;
+      } else if (Array.isArray(responseData?.documents)) {
+        pdfList = responseData.documents;
+      } else if (Array.isArray(responseData?.pdfs)) {
+        pdfList = responseData.pdfs;
+      } else if (Array.isArray(response?.documents)) {
+        pdfList = response.documents;
+      } else if (Array.isArray(response?.pdfs)) {
+        pdfList = response.pdfs;
+      }
+
+      setDocuments(pdfList);
+
+      const backendStatistics =
+        response?.statistics ||
+        responseData?.statistics ||
+        {};
+
+      const totalDocuments =
+        backendStatistics.totalDocuments ?? pdfList.length;
+
+      const totalPages =
+        backendStatistics.totalPages ??
+        pdfList.reduce(
+          (total, pdf) => total + Number(pdf.pages || 0),
+          0
+        );
+
+      const totalChunks =
+        backendStatistics.totalChunks ??
+        pdfList.reduce(
+          (total, pdf) => total + Number(pdf.chunkCount || 0),
+          0
+        );
+
+      const activeDocuments =
+        backendStatistics.activeDocuments ??
+        pdfList.filter(
+          (pdf) =>
+            pdf.status === "processed" ||
+            pdf.status === "uploaded" ||
+            pdf.status === "processing"
+        ).length;
+
+      setStatistics({
+        totalDocuments,
+        totalPages,
+        totalChunks,
+        activeDocuments,
+      });
+    } catch (error) {
+      console.error("Get Documents Error:", error);
+
+      setError(
+        error.message || "Failed to fetch documents"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const getTechnologyName = (pdf) => {
+    if (
+      pdf.technologyId &&
+      typeof pdf.technologyId === "object"
+    ) {
+      return pdf.technologyId.name || "Unknown";
+    }
+
+    return (
+      pdf.technology ||
+      pdf.technologyName ||
+      "Unknown"
+    );
+  };
+
+  const getFolderName = (pdf) => {
+    if (
+      pdf.folderId &&
+      typeof pdf.folderId === "object"
+    ) {
+      return pdf.folderId.name || "No Folder";
+    }
+
+    return (
+      pdf.folder ||
+      pdf.folderName ||
+      "No Folder"
+    );
+  };
+
+  const getUploaderName = (pdf) => {
+    if (
+      pdf.userId &&
+      typeof pdf.userId === "object"
+    ) {
+      return (
+        pdf.userId.name ||
+        pdf.userId.email ||
+        "Unknown"
+      );
+    }
+
+    return (
+      pdf.uploadedBy ||
+      pdf.userName ||
+      "Unknown"
+    );
+  };
+
+  const getUploaderEmail = (pdf) => {
+    if (
+      pdf.userId &&
+      typeof pdf.userId === "object"
+    ) {
+      return pdf.userId.email || "";
+    }
+
+    return "";
+  };
+
+  const getDocumentName = (pdf) => {
+    return (
+      pdf.originalName ||
+      pdf.filename ||
+      pdf.name ||
+      "Untitled Document"
+    );
+  };
+
+  const getDocumentStatus = (pdf) => {
+    if (pdf.status === "processed") {
+      return "Active";
+    }
+
+    if (pdf.status === "uploaded") {
+      return "Active";
+    }
+
+    if (pdf.status === "processing") {
+      return "Processing";
+    }
+
+    if (pdf.status === "failed") {
+      return "Inactive";
+    }
+
+    return pdf.isActive === false
+      ? "Inactive"
+      : "Active";
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "—";
+    }
+
+    return parsedDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const technologies = useMemo(() => {
+    const uniqueTechnologies = [
+      ...new Set(
+        documents
+          .map((pdf) => getTechnologyName(pdf))
+          .filter(
+            (technologyName) =>
+              technologyName &&
+              technologyName !== "Unknown"
+          )
+      ),
+    ];
+
+    return [
+      "All Technologies",
+      ...uniqueTechnologies.sort((a, b) =>
+        a.localeCompare(b)
+      ),
+    ];
+  }, [documents]);
+
+  const statuses = [
+    "All Status",
+    "Active",
+    "Processing",
+    "Inactive",
+  ];
 
   const filteredDocuments = useMemo(() => {
-    return documents.filter((doc) => {
-      const searchText = search.toLowerCase();
+    const searchText =
+      search.trim().toLowerCase();
+
+    return documents.filter((pdf) => {
+      const documentName =
+        getDocumentName(pdf).toLowerCase();
+
+      const technologyName =
+        getTechnologyName(pdf).toLowerCase();
+
+      const folderName =
+        getFolderName(pdf).toLowerCase();
+
+      const uploaderName =
+        getUploaderName(pdf).toLowerCase();
+
+      const uploaderEmail =
+        getUploaderEmail(pdf).toLowerCase();
+
+      const documentStatus =
+        getDocumentStatus(pdf);
 
       const matchesSearch =
-        doc.name.toLowerCase().includes(searchText) ||
-        doc.technology.toLowerCase().includes(searchText) ||
-        doc.folder.toLowerCase().includes(searchText) ||
-        doc.uploadedBy.toLowerCase().includes(searchText);
+        !searchText ||
+        documentName.includes(searchText) ||
+        technologyName.includes(searchText) ||
+        folderName.includes(searchText) ||
+        uploaderName.includes(searchText) ||
+        uploaderEmail.includes(searchText);
 
       const matchesTechnology =
         technology === "All Technologies" ||
-        doc.technology === technology;
+        technologyName ===
+          technology.toLowerCase();
 
       const matchesStatus =
-        status === "All Status" || doc.status === status;
+        status === "All Status" ||
+        documentStatus === status;
 
-      return matchesSearch && matchesTechnology && matchesStatus;
+      return (
+        matchesSearch &&
+        matchesTechnology &&
+        matchesStatus
+      );
     });
+  }, [
+    documents,
+    search,
+    technology,
+    status,
+  ]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [search, technology, status]);
 
-  const totalDocuments = documents.length;
-
-  const totalPages = documents.reduce(
-    (total, document) => total + document.pages,
-    0
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      filteredDocuments.length /
+        ITEMS_PER_PAGE
+    )
   );
 
-  const totalChunks = documents.reduce(
-    (total, document) => total + document.chunks,
-    0
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedDocuments =
+    filteredDocuments.slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE
+    );
+
+  const showingFrom =
+    filteredDocuments.length === 0
+      ? 0
+      : (currentPage - 1) *
+          ITEMS_PER_PAGE +
+        1;
+
+  const showingTo = Math.min(
+    currentPage * ITEMS_PER_PAGE,
+    filteredDocuments.length
   );
 
-  const clearFilters = () => {
-    setSearch("");
-    setTechnology("All Technologies");
-    setStatus("All Status");
-    setCurrentPage(1);
+  const getStatusClass = (value) => {
+    if (value === "Active") {
+      return "bg-emerald-100 text-emerald-700";
+    }
+
+    if (value === "Processing") {
+      return "bg-orange-100 text-orange-700";
+    }
+
+    return "bg-slate-100 text-slate-600";
   };
+
+  const getFileUrl = (filePath) => {
+    if (!filePath) {
+      return null;
+    }
+
+    if (
+      filePath.startsWith("http://") ||
+      filePath.startsWith("https://")
+    ) {
+      return filePath;
+    }
+
+    const normalizedPath = filePath.replace(
+      /\\/g,
+      "/"
+    );
+
+    const storageIndex =
+      normalizedPath.indexOf("/storage/");
+
+    if (storageIndex !== -1) {
+      const relativePath =
+        normalizedPath.substring(
+          storageIndex + "/storage/".length
+        );
+
+      return `http://localhost:5000/storage/${relativePath}`;
+    }
+
+    const uploadsIndex =
+      normalizedPath.indexOf("/uploads/");
+
+    if (uploadsIndex !== -1) {
+      const relativePath =
+        normalizedPath.substring(
+          uploadsIndex + "/uploads/".length
+        );
+
+      return `http://localhost:5000/uploads/${relativePath}`;
+    }
+
+    if (
+      normalizedPath.startsWith("storage/")
+    ) {
+      return `http://localhost:5000/${normalizedPath}`;
+    }
+
+    if (
+      normalizedPath.startsWith("uploads/")
+    ) {
+      return `http://localhost:5000/${normalizedPath}`;
+    }
+
+    return null;
+  };
+
+  const handleView = (pdf) => {
+    if (!pdf?.filePath) {
+      window.alert(
+        "Document file is not available."
+      );
+      return;
+    }
+
+    const fileUrl = getFileUrl(
+      pdf.filePath
+    );
+
+    if (!fileUrl) {
+      window.alert(
+        "Unable to open this document."
+      );
+      return;
+    }
+
+    window.open(
+      fileUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  const handleDownload = (pdf) => {
+    if (!pdf?.filePath) {
+      window.alert(
+        "PDF file is not available."
+      );
+      return;
+    }
+
+    const fileUrl = getFileUrl(
+      pdf.filePath
+    );
+
+    if (!fileUrl) {
+      window.alert(
+        "Unable to download this document."
+      );
+      return;
+    }
+
+    const link =
+      document.createElement("a");
+
+    link.href = fileUrl;
+    link.download =
+      pdf.originalName ||
+      pdf.filename ||
+      "document.pdf";
+
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDelete = async (id) => {
+    if (!id || deletingId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this document?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+
+      await deletePdf(id);
+
+      setDocuments((previousDocuments) =>
+        previousDocuments.filter(
+          (pdf) => pdf._id !== id
+        )
+      );
+
+      setStatistics((previousStatistics) => ({
+        ...previousStatistics,
+        totalDocuments: Math.max(
+          0,
+          previousStatistics.totalDocuments - 1
+        ),
+      }));
+    } catch (error) {
+      console.error(
+        "Delete PDF Error:",
+        error
+      );
+
+      window.alert(
+        error.message ||
+          "Failed to delete document."
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const goToPage = (page) => {
+    if (
+      page < 1 ||
+      page > totalPages ||
+      page === currentPage
+    ) {
+      return;
+    }
+
+    setCurrentPage(page);
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) {
+      return null;
+    }
+
+    const pages = [];
+
+    if (totalPages <= 5) {
+      for (
+        let i = 1;
+        i <= totalPages;
+        i++
+      ) {
+        pages.push(i);
+      }
+    } else if (currentPage <= 3) {
+      pages.push(
+        1,
+        2,
+        3,
+        "...",
+        totalPages
+      );
+    } else if (
+      currentPage >= totalPages - 2
+    ) {
+      pages.push(
+        1,
+        "...",
+        totalPages - 2,
+        totalPages - 1,
+        totalPages
+      );
+    } else {
+      pages.push(
+        1,
+        "...",
+        currentPage,
+        "...",
+        totalPages
+      );
+    }
+
+    return pages.map((page, index) => {
+      if (page === "...") {
+        const previousPage =
+          pages[index - 1];
+
+        const nextPage =
+          pages[index + 1];
+
+        return (
+          <button
+            key={`dots-${index}`}
+            type="button"
+            onClick={() => {
+              if (
+                typeof previousPage ===
+                  "number" &&
+                typeof nextPage ===
+                  "number"
+              ) {
+                const middlePage = Math.floor(
+                  (previousPage + nextPage) /
+                    2
+                );
+
+                goToPage(middlePage);
+              }
+            }}
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-sm text-slate-500 transition hover:bg-slate-100"
+            title="Jump to page"
+          >
+            ...
+          </button>
+        );
+      }
+
+      return (
+        <button
+          key={page}
+          type="button"
+          onClick={() => goToPage(page)}
+          className={`flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-lg border px-2 text-sm font-medium transition ${
+            currentPage === page
+              ? "border-blue-600 bg-blue-600 text-white"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          }`}
+        >
+          {page}
+        </button>
+      );
+    });
+  };
+
+  if (loading) {
+    return (
+      <>
+        <AdminNavbar />
+
+        <main className="min-h-screen bg-[#f8fafc] px-4 py-8 text-[#0f172a] sm:px-6 md:px-8 lg:px-10 xl:px-12">
+          <div className="mx-auto flex min-h-[600px] max-w-[1600px] items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
+
+              <p className="mt-4 text-sm font-medium text-slate-600">
+                Loading documents...
+              </p>
+            </div>
+          </div>
+        </main>
+
+        <Footer />
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <AdminNavbar />
+
+        <main className="min-h-screen bg-[#f8fafc] px-4 py-8 text-[#0f172a] sm:px-6 md:px-8 lg:px-10 xl:px-12">
+          <div className="mx-auto flex min-h-[600px] max-w-[1600px] items-center justify-center">
+            <div className="rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
+              <FileText className="mx-auto h-12 w-12 text-red-400" />
+
+              <h2 className="mt-4 text-lg font-bold text-red-600">
+                Unable to Load Documents
+              </h2>
+
+              <p className="mt-2 text-sm text-slate-600">
+                {error}
+              </p>
+
+              <button
+                type="button"
+                onClick={fetchDocuments}
+                className="mt-5 cursor-pointer rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </main>
+
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
-     
+      <AdminNavbar />
+
       <main className="w-full px-4 py-6 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-14">
         <div className="mx-auto w-full max-w-[1600px]">
 
-         
           <section className="mb-7">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
                   <span>Dashboard</span>
                   <span>/</span>
-                  <span className="text-blue-600">Documents</span>
+                  <span className="text-blue-600">
+                    Documents
+                  </span>
                 </div>
 
                 <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -157,127 +702,48 @@ const AdminDocuments = () => {
                 </h1>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
-                  View and manage all documents uploaded to the AI Search
-                  Assistant.
+                  View and manage all documents uploaded to the AI Search Assistant.
                 </p>
               </div>
             </div>
           </section>
 
-         
           <section className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-         
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Total Documents
-                  </p>
+            <StatCard
+              title="Total Documents"
+              value={statistics.totalDocuments}
+              icon={FileText}
+              iconClass="bg-blue-50 text-blue-600"
+              footer="All uploaded documents"
+            />
 
-                  <h2 className="mt-2 text-3xl font-bold">
-                    {totalDocuments}
-                  </h2>
-                </div>
+            <StatCard
+              title="Total Pages"
+              value={statistics.totalPages}
+              icon={BookOpen}
+              iconClass="bg-emerald-50 text-emerald-600"
+              footer="Across all documents"
+            />
 
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
-                  <FileText className="h-7 w-7 text-blue-600" />
-                </div>
-              </div>
+            <StatCard
+              title="Total Text Chunks"
+              value={statistics.totalChunks}
+              icon={Layers3}
+              iconClass="bg-purple-50 text-purple-600"
+              footer="Indexed text chunks"
+            />
 
-              <div className="mt-4 flex items-center gap-2 text-sm">
-                <span className="font-medium text-emerald-600">
-                  ↑ 12
-                </span>
-                <span className="text-slate-500">
-                  this month
-                </span>
-              </div>
-            </div>
+            <StatCard
+              title="Active Documents"
+              value={statistics.activeDocuments}
+              icon={FileText}
+              iconClass="bg-orange-50 text-orange-500"
+              footer="Currently available"
+            />
 
-           
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Total Pages
-                  </p>
-
-                  <h2 className="mt-2 text-3xl font-bold">
-                    {totalPages.toLocaleString()}
-                  </h2>
-                </div>
-
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
-                  <BookOpen className="h-7 w-7 text-emerald-600" />
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-2 text-sm">
-                <span className="font-medium text-emerald-600">
-                  ↑ 180
-                </span>
-                <span className="text-slate-500">
-                  this week
-                </span>
-              </div>
-            </div>
-
-           
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Total Text Chunks
-                  </p>
-
-                  <h2 className="mt-2 text-3xl font-bold">
-                    {totalChunks.toLocaleString()}
-                  </h2>
-                </div>
-
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-50">
-                  <Layers3 className="h-7 w-7 text-purple-600" />
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-2 text-sm">
-                <span className="font-medium text-emerald-600">
-                  ↑ 320
-                </span>
-                <span className="text-slate-500">
-                  this week
-                </span>
-              </div>
-            </div>
-
-            
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Active Documents
-                  </p>
-
-                  <h2 className="mt-2 text-3xl font-bold">
-                    {documents.filter(
-                      (doc) => doc.status === "Active"
-                    ).length}
-                  </h2>
-                </div>
-
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
-                  <FileText className="h-7 w-7 text-orange-500" />
-                </div>
-              </div>
-
-              <div className="mt-4 text-sm text-slate-500">
-                Currently available
-              </div>
-            </div>
           </section>
 
-          
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
             <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
@@ -289,51 +755,49 @@ const AdminDocuments = () => {
                   </h2>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    Manage uploaded PDF documents and their indexing
-                    information.
+                    Manage uploaded PDF documents and their indexing information.
                   </p>
                 </div>
 
                 <div className="text-sm text-slate-500">
                   {filteredDocuments.length} documents found
                 </div>
+
               </div>
             </div>
 
-            
             <div className="border-b border-slate-200 bg-slate-50/70 p-4 sm:p-5">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(250px,1fr)_220px_180px_auto]">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(250px,1fr)_220px_180px]">
 
-                
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
 
                   <input
                     type="text"
                     value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setCurrentPage(1);
-                    }}
+                    onChange={(e) =>
+                      setSearch(e.target.value)
+                    }
                     placeholder="Search documents..."
                     className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
 
-                
                 <div className="relative">
                   <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
                   <select
                     value={technology}
-                    onChange={(e) => {
-                      setTechnology(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    onChange={(e) =>
+                      setTechnology(e.target.value)
+                    }
+                    className="h-11 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   >
                     {technologies.map((item) => (
-                      <option key={item} value={item}>
+                      <option
+                        key={item}
+                        value={item}
+                      >
                         {item}
                       </option>
                     ))}
@@ -342,18 +806,19 @@ const AdminDocuments = () => {
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </div>
 
-               
                 <div className="relative">
                   <select
                     value={status}
-                    onChange={(e) => {
-                      setStatus(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-9 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    onChange={(e) =>
+                      setStatus(e.target.value)
+                    }
+                    className="h-11 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-9 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   >
                     {statuses.map((item) => (
-                      <option key={item} value={item}>
+                      <option
+                        key={item}
+                        value={item}
+                      >
                         {item}
                       </option>
                     ))}
@@ -362,22 +827,14 @@ const AdminDocuments = () => {
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </div>
 
-                
-                <button
-                  onClick={clearFilters}
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
-                >
-                  <X className="h-4 w-4" />
-                  Clear
-                </button>
               </div>
             </div>
 
-            
             <div className="hidden overflow-x-auto lg:block">
-              <table className="w-full min-w-[1050px]">
+              <table className="w-full min-w-[1150px]">
                 <thead>
                   <tr className="border-b border-slate-200 bg-white text-left">
+
                     <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Document
                     </th>
@@ -409,233 +866,350 @@ const AdminDocuments = () => {
                     <th className="px-5 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Actions
                     </th>
+
                   </tr>
                 </thead>
 
                 <tbody>
-                  {filteredDocuments.map((doc) => (
-                    <tr
-                      key={doc.id}
-                      className="border-b border-slate-100 transition hover:bg-slate-50"
+                  {paginatedDocuments.length > 0 ? (
+                    paginatedDocuments.map((pdf) => {
+                      const documentName =
+                        getDocumentName(pdf);
+
+                      const technologyName =
+                        getTechnologyName(pdf);
+
+                      const folderName =
+                        getFolderName(pdf);
+
+                      const uploaderName =
+                        getUploaderName(pdf);
+
+                      const documentStatus =
+                        getDocumentStatus(pdf);
+
+                      return (
+                        <tr
+                          key={pdf._id}
+                          className="border-b border-slate-100 transition hover:bg-slate-50"
+                        >
+                          <td className="px-5 py-4">
+                            <div className="flex min-w-[250px] items-center gap-3">
+
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50">
+                                <FileText className="h-5 w-5 text-red-500" />
+                              </div>
+
+                              <div className="min-w-0">
+                                <p
+                                  className="truncate text-sm font-semibold text-slate-900"
+                                  title={documentName}
+                                >
+                                  {documentName}
+                                </p>
+
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {formatDate(
+                                    pdf.createdAt
+                                  )}
+                                </p>
+                              </div>
+
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <span className="text-sm text-slate-700">
+                              {technologyName}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+                              {folderName}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-4 text-sm font-medium text-slate-700">
+                            {Number(
+                              pdf.pages || 0
+                            ).toLocaleString()}
+                          </td>
+
+                          <td className="px-4 py-4 text-sm font-medium text-slate-700">
+                            {Number(
+                              pdf.chunkCount || 0
+                            ).toLocaleString()}
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <div>
+                              <p className="text-sm text-slate-700">
+                                {uploaderName}
+                              </p>
+
+                              {getUploaderEmail(
+                                pdf
+                              ) && (
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {getUploaderEmail(
+                                    pdf
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(
+                                documentStatus
+                              )}`}
+                            >
+                              {documentStatus}
+                            </span>
+                          </td>
+
+                          <td className="px-5 py-4">
+                            <div className="flex justify-end gap-2">
+
+                              <button
+                                type="button"
+                                title="View document"
+                                onClick={() =>
+                                  handleView(pdf)
+                                }
+                                disabled={
+                                  deletingId ===
+                                  pdf._id
+                                }
+                                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+
+                              <button
+                                type="button"
+                                title="Download document"
+                                onClick={() =>
+                                  handleDownload(pdf)
+                                }
+                                disabled={
+                                  deletingId ===
+                                  pdf._id
+                                }
+                                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-purple-50 text-purple-600 transition hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
+
+                              <button
+                                type="button"
+                                title="Delete document"
+                                onClick={() =>
+                                  handleDelete(
+                                    pdf._id
+                                  )
+                                }
+                                disabled={
+                                  deletingId ===
+                                  pdf._id
+                                }
+                                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-red-50 text-red-500 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {deletingId ===
+                                pdf._id ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </button>
+
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="8"
+                        className="px-6 py-16 text-center"
+                      >
+                        <FileText className="mx-auto h-12 w-12 text-slate-300" />
+
+                        <h3 className="mt-4 text-lg font-semibold text-slate-800">
+                          No documents found
+                        </h3>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          Try changing your search or filters.
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 p-4 lg:hidden">
+
+              {paginatedDocuments.length > 0 ? (
+                paginatedDocuments.map((pdf) => {
+                  const documentName =
+                    getDocumentName(pdf);
+
+                  const technologyName =
+                    getTechnologyName(pdf);
+
+                  const folderName =
+                    getFolderName(pdf);
+
+                  const uploaderName =
+                    getUploaderName(pdf);
+
+                  const documentStatus =
+                    getDocumentStatus(pdf);
+
+                  return (
+                    <article
+                      key={pdf._id}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                     >
-                     
-                      <td className="px-5 py-4">
-                        <div className="flex min-w-[240px] items-center gap-3">
+                      <div className="flex items-start justify-between gap-3">
+
+                        <div className="flex min-w-0 items-center gap-3">
+
                           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50">
                             <FileText className="h-5 w-5 text-red-500" />
                           </div>
 
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-slate-900">
-                              {doc.name}
-                            </p>
+                            <h3 className="truncate text-sm font-semibold">
+                              {documentName}
+                            </h3>
 
                             <p className="mt-1 text-xs text-slate-500">
-                              {doc.uploadedAt}
+                              {formatDate(
+                                pdf.createdAt
+                              )}
                             </p>
                           </div>
+
                         </div>
-                      </td>
 
-                     
-                      <td className="px-4 py-4">
-                        <span className="text-sm text-slate-700">
-                          {doc.technology}
-                        </span>
-                      </td>
-
-                     
-                      <td className="px-4 py-4">
-                        <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
-                          {doc.folder}
-                        </span>
-                      </td>
-
-                     
-                      <td className="px-4 py-4 text-sm font-medium text-slate-700">
-                        {doc.pages}
-                      </td>
-
-                      
-                      <td className="px-4 py-4 text-sm font-medium text-slate-700">
-                        {doc.chunks}
-                      </td>
-
-                      
-                      <td className="px-4 py-4">
-                        <span className="text-sm text-slate-700">
-                          {doc.uploadedBy}
-                        </span>
-                      </td>
-
-                      
-                      <td className="px-4 py-4">
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                            doc.status === "Active"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-slate-100 text-slate-600"
-                          }`}
+                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(
+                            documentStatus
+                          )}`}
                         >
-                          {doc.status}
+                          {documentStatus}
                         </span>
-                      </td>
 
-                      
-                      <td className="px-5 py-4">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            title="View document"
-                            className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition hover:bg-blue-100"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-
-                          <button
-                            title="Download document"
-                            className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-600 transition hover:bg-purple-100"
-                          >
-                            <Download className="h-4 w-4" />
-                          </button>
-
-                          <button
-                            title="Delete document"
-                            className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-500 transition hover:bg-red-100"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {filteredDocuments.length === 0 && (
-                <div className="px-6 py-16 text-center">
-                  <FileText className="mx-auto h-12 w-12 text-slate-300" />
-
-                  <h3 className="mt-4 text-lg font-semibold text-slate-800">
-                    No documents found
-                  </h3>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    Try changing your search or filters.
-                  </p>
-                </div>
-              )}
-            </div>
-
-           
-            <div className="grid grid-cols-1 gap-4 p-4 lg:hidden">
-              {filteredDocuments.map((doc) => (
-                <article
-                  key={doc.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                >
-                 
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50">
-                        <FileText className="h-5 w-5 text-red-500" />
                       </div>
 
-                      <div className="min-w-0">
-                        <h3 className="truncate text-sm font-semibold">
-                          {doc.name}
-                        </h3>
+                      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
 
-                        <p className="mt-1 text-xs text-slate-500">
-                          {doc.uploadedAt}
+                        <InfoBox
+                          label="Technology"
+                          value={technologyName}
+                        />
+
+                        <InfoBox
+                          label="Folder"
+                          value={folderName}
+                        />
+
+                        <InfoBox
+                          label="Pages"
+                          value={Number(
+                            pdf.pages || 0
+                          ).toLocaleString()}
+                        />
+
+                        <InfoBox
+                          label="Chunks"
+                          value={Number(
+                            pdf.chunkCount || 0
+                          ).toLocaleString()}
+                        />
+
+                      </div>
+
+                      <div className="mt-3 rounded-xl bg-slate-50 p-3">
+                        <p className="text-xs text-slate-500">
+                          Uploaded By
                         </p>
+
+                        <p className="mt-1 text-sm font-medium">
+                          {uploaderName}
+                        </p>
+
+                        {getUploaderEmail(pdf) && (
+                          <p className="mt-1 text-xs text-slate-500">
+                            {getUploaderEmail(pdf)}
+                          </p>
+                        )}
                       </div>
-                    </div>
 
-                    <span
-                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                        doc.status === "Active"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {doc.status}
-                    </span>
-                  </div>
+                      <div className="mt-4 flex gap-2">
 
-                 
-                  <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div className="rounded-xl bg-slate-50 p-3">
-                      <p className="text-xs text-slate-500">
-                        Technology
-                      </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleView(pdf)
+                          }
+                          disabled={
+                            deletingId ===
+                            pdf._id
+                          }
+                          className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-50 py-2.5 text-sm font-medium text-blue-600 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View
+                        </button>
 
-                      <p className="mt-1 truncate text-sm font-medium">
-                        {doc.technology}
-                      </p>
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDownload(pdf)
+                          }
+                          disabled={
+                            deletingId ===
+                            pdf._id
+                          }
+                          className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-purple-50 py-2.5 text-sm font-medium text-purple-600 transition hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download
+                        </button>
 
-                    <div className="rounded-xl bg-slate-50 p-3">
-                      <p className="text-xs text-slate-500">
-                        Folder
-                      </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDelete(
+                              pdf._id
+                            )
+                          }
+                          disabled={
+                            deletingId ===
+                            pdf._id
+                          }
+                          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {deletingId ===
+                          pdf._id ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
 
-                      <p className="mt-1 truncate text-sm font-medium">
-                        {doc.folder}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl bg-slate-50 p-3">
-                      <p className="text-xs text-slate-500">
-                        Pages
-                      </p>
-
-                      <p className="mt-1 text-sm font-semibold">
-                        {doc.pages}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl bg-slate-50 p-3">
-                      <p className="text-xs text-slate-500">
-                        Chunks
-                      </p>
-
-                      <p className="mt-1 text-sm font-semibold">
-                        {doc.chunks}
-                      </p>
-                    </div>
-                  </div>
-
-                
-                  <div className="mt-3 rounded-xl bg-slate-50 p-3">
-                    <p className="text-xs text-slate-500">
-                      Uploaded By
-                    </p>
-
-                    <p className="mt-1 text-sm font-medium">
-                      {doc.uploadedBy}
-                    </p>
-                  </div>
-
-                  
-                  <div className="mt-4 flex gap-2">
-                    <button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-50 py-2.5 text-sm font-medium text-blue-600 transition hover:bg-blue-100">
-                      <Eye className="h-4 w-4" />
-                      View
-                    </button>
-
-                    <button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-purple-50 py-2.5 text-sm font-medium text-purple-600 transition hover:bg-purple-100">
-                      <Download className="h-4 w-4" />
-                      Download
-                    </button>
-
-                    <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </article>
-              ))}
-
-              {filteredDocuments.length === 0 && (
+                      </div>
+                    </article>
+                  );
+                })
+              ) : (
                 <div className="px-4 py-12 text-center">
                   <FileText className="mx-auto h-12 w-12 text-slate-300" />
 
@@ -648,50 +1222,123 @@ const AdminDocuments = () => {
                   </p>
                 </div>
               )}
+
             </div>
 
-            
             <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+
               <p className="text-sm text-slate-500">
                 Showing{" "}
                 <span className="font-medium text-slate-700">
-                  {filteredDocuments.length}
+                  {showingFrom}
+                </span>{" "}
+                to{" "}
+                <span className="font-medium text-slate-700">
+                  {showingTo}
                 </span>{" "}
                 of{" "}
                 <span className="font-medium text-slate-700">
-                  {documents.length}
+                  {filteredDocuments.length}
                 </span>{" "}
                 documents
               </p>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((page) => Math.max(1, page - 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
+              {filteredDocuments.length > 0 && (
+                <div className="flex items-center gap-2">
 
-                <button
-                  className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-medium text-white"
-                >
-                  {currentPage}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      goToPage(
+                        currentPage - 1
+                      )
+                    }
+                    disabled={
+                      currentPage === 1
+                    }
+                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
 
-                <button
-                  onClick={() => setCurrentPage((page) => page + 1)}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
+                  {renderPagination()}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      goToPage(
+                        currentPage + 1
+                      )
+                    }
+                    disabled={
+                      currentPage ===
+                      totalPages
+                    }
+                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+
+                </div>
+              )}
+
             </div>
+
           </section>
         </div>
       </main>
+
+      <Footer />
+    </div>
+  );
+};
+
+const StatCard = ({
+  title,
+  value,
+  icon: Icon,
+  iconClass,
+  footer,
+}) => {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+      <div className="flex items-start justify-between">
+
+        <div>
+          <p className="text-sm font-medium text-slate-500">
+            {title}
+          </p>
+
+          <h2 className="mt-2 text-3xl font-bold">
+            {Number(value || 0).toLocaleString()}
+          </h2>
+        </div>
+
+        <div
+          className={`flex h-14 w-14 items-center justify-center rounded-2xl ${iconClass}`}
+        >
+          <Icon className="h-7 w-7" />
+        </div>
+
+      </div>
+
+      <div className="mt-4 text-sm text-slate-500">
+        {footer}
+      </div>
+    </div>
+  );
+};
+
+const InfoBox = ({ label, value }) => {
+  return (
+    <div className="rounded-xl bg-slate-50 p-3">
+      <p className="text-xs text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-1 truncate text-sm font-medium">
+        {value}
+      </p>
     </div>
   );
 };

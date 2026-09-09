@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Home,LayoutDashboard,MessageSquare,Upload,Info,LogIn,UserPlus,Menu,X,LogOut,CheckCircle,AlertCircle,} from "lucide-react";
+import { Home, LayoutDashboard, MessageSquare, Upload, Info, LogIn, UserPlus, Menu, X, LogOut, CheckCircle, AlertCircle, } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "../../assets/main_logo.png";
 
@@ -673,7 +673,7 @@ const Navbar = () => {
                         gap-3
                         "
                       >
-{/* LOGOUT */}
+                        {/* LOGOUT */}
 
                         <button
                           onClick={handleLogout}
@@ -1108,7 +1108,7 @@ const Navbar = () => {
                         {/* MOBILE BUTTONS */}
 
                         <div className="mt-5 pt-4 border-t border-gray-100 flex gap-2">
-<button
+                          <button
                             onClick={handleLogout}
                             className="
                             flex-1
@@ -1172,11 +1172,10 @@ const Navbar = () => {
           gap-3
           border
           animate-[slideIn_0.3s_ease-out]
-          ${
-            toast.type === "error"
+          ${toast.type === "error"
               ? "bg-red-500 border-red-400"
               : "bg-indigo-600 border-indigo-400"
-          }
+            }
           `}
         >
 

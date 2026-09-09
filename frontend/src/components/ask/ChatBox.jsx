@@ -2,13 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import {
   Sparkles,
   Send,
-  ChevronDown,
   FileText,
   ExternalLink,
   Loader2,
 } from "lucide-react";
 
-import API_BASE_URL from "../../api/api";
+import { askQuestion } from "../../api/chatApi";
 
 export default function ChatBox({
   technologyId,
@@ -16,7 +15,6 @@ export default function ChatBox({
   selectedChat,
   onQuestionAsked,
 }) {
-  const [model, setModel] = useState("GPT-5.2");
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -25,70 +23,37 @@ export default function ChatBox({
   const chatContainerRef = useRef(null);
 
   useEffect(() => {
-  if (!selectedChat) return;
+    if (!selectedChat) return;
 
-  console.log("ChatBox Selected Chat:", selectedChat);
+    const restoredMessage = {
+      id: selectedChat._id || Date.now().toString(),
+      question: selectedChat.question || "",
+      answer: selectedChat.answer || "",
+      sources: selectedChat.sources || [],
+      loading: false,
+      error: "",
+      technologyId:
+        selectedChat.technologyId?._id ||
+        selectedChat.technologyId ||
+        "",
+      folderId:
+        selectedChat.folderId?._id ||
+        selectedChat.folderId ||
+        "",
+      createdAt: selectedChat.createdAt,
+    };
 
-  const restoredMessage = {
-    id: selectedChat._id || Date.now().toString(),
-
-    question: selectedChat.question || "",
-
-    answer: selectedChat.answer || "",
-
-    sources: selectedChat.sources || [],
-
-    loading: false,
-
-    error: "",
-
-    technologyId:
-      selectedChat.technologyId?._id ||
-      selectedChat.technologyId ||
-      "",
-
-    folderId:
-      selectedChat.folderId?._id ||
-      selectedChat.folderId ||
-      "",
-
-    createdAt: selectedChat.createdAt,
-  };
-
-  setMessages([restoredMessage]);
-
-  setQuestion("");
-
-  setError("");
-}, [selectedChat]);
+    setMessages([restoredMessage]);
+    setQuestion("");
+    setError("");
+  }, [selectedChat]);
 
   useEffect(() => {
-  console.log("CHATBOX RECEIVED:", selectedChat);
-
-  if (!selectedChat) return;
-
-  const restoredMessage = {
-    id: selectedChat._id || Date.now().toString(),
-    question: selectedChat.question || "",
-    answer: selectedChat.answer || "",
-    sources: selectedChat.sources || [],
-    loading: false,
-    error: "",
-    technologyId:
-      selectedChat.technologyId?._id ||
-      selectedChat.technologyId ||
-      "",
-    folderId:
-      selectedChat.folderId?._id ||
-      selectedChat.folderId ||
-      "",
-    createdAt: selectedChat.createdAt,
-  };
-
-  setMessages([restoredMessage]);
-  setQuestion("");
-  setError("");
-}, [selectedChat]);
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleAsk = async () => {
     const currentQuestion = question.trim();
@@ -120,41 +85,20 @@ export default function ChatBox({
     };
 
     setMessages((prev) => [...prev, newMessage]);
-
     setQuestion("");
     setError("");
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/chat/ask`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            question: currentQuestion,
-            technologyId,
-            folderId,
-            topK: 5,
-          }),
-        }
-      );
+      const data = await askQuestion({
+        question: currentQuestion,
+        technologyId,
+        folderId,
+        topK: 5,
+      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to generate answer"
-        );
-      }
-
-      const generatedAnswer =
-        data.data?.answer || "";
-
-      const generatedSources =
-        data.data?.sources || [];
+      const generatedAnswer = data.data?.answer || "";
+      const generatedSources = data.data?.sources || [];
 
       setMessages((prev) =>
         prev.map((message) =>
@@ -173,14 +117,10 @@ export default function ChatBox({
         onQuestionAsked();
       }
     } catch (error) {
-      console.error(
-        "Ask Question Error:",
-        error
-      );
+      console.error("Ask Question Error:", error);
 
       const errorMessage =
-        error.message ||
-        "Failed to generate answer";
+        error.message || "Failed to generate answer";
 
       setMessages((prev) =>
         prev.map((message) =>
@@ -201,10 +141,7 @@ export default function ChatBox({
   };
 
   const handleKeyDown = (e) => {
-    if (
-      e.key === "Enter" &&
-      !e.shiftKey
-    ) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleAsk();
     }
@@ -213,8 +150,7 @@ export default function ChatBox({
   const formatAnswer = (text) => {
     if (!text) return null;
 
-    const normalizedText =
-      text.replace(/\r\n/g, "\n");
+    const normalizedText = text.replace(/\r\n/g, "\n");
 
     const lines = normalizedText
       .split("\n")
@@ -257,10 +193,7 @@ export default function ChatBox({
             );
           }
 
-          if (
-            line.startsWith("- ") ||
-            line.startsWith("* ")
-          ) {
+          if (line.startsWith("- ") || line.startsWith("* ")) {
             return (
               <div
                 key={index}
@@ -270,15 +203,12 @@ export default function ChatBox({
                   •
                 </span>
 
-                <span>
-                  {line.slice(2)}
-                </span>
+                <span>{line.slice(2)}</span>
               </div>
             );
           }
 
-          const numberedMatch =
-            line.match(/^(\d+)\.\s+(.*)$/);
+          const numberedMatch = line.match(/^(\d+)\.\s+(.*)$/);
 
           if (numberedMatch) {
             return (
@@ -290,9 +220,7 @@ export default function ChatBox({
                   {numberedMatch[1]}.
                 </span>
 
-                <span>
-                  {numberedMatch[2]}
-                </span>
+                <span>{numberedMatch[2]}</span>
               </div>
             );
           }
@@ -320,36 +248,26 @@ export default function ChatBox({
   };
 
   const getSourcePage = (source) => {
-    return (
-      source?.page ||
-      source?.pageNumber ||
-      "N/A"
-    );
+    return source?.page || source?.pageNumber || "N/A";
   };
 
   const handleViewSource = (source) => {
     if (!source?.filePath) {
-      setError(
-        "Source PDF path is not available."
-      );
+      setError("Source PDF path is not available.");
       return;
     }
 
-    const fileUrl =
-      source.filePath.startsWith("http")
-        ? source.filePath
-        : `http://localhost:5000/${source.filePath
-            .replace(/\\/g, "/")
-            .replace(/^\/+/, "")}`;
+    const fileUrl = source.filePath.startsWith("http")
+      ? source.filePath
+      : `http://localhost:5000/${source.filePath
+          .replace(/\\/g, "/")
+          .replace(/^\/+/, "")}`;
 
     window.open(fileUrl, "_blank");
   };
 
   const renderSources = (sources) => {
-    if (
-      !sources ||
-      sources.length === 0
-    ) {
+    if (!sources || sources.length === 0) {
       return null;
     }
 
@@ -368,9 +286,7 @@ export default function ChatBox({
 
           <span className="text-xs text-gray-500">
             {sources.length}{" "}
-            {sources.length === 1
-              ? "source"
-              : "sources"}
+            {sources.length === 1 ? "source" : "sources"}
           </span>
         </div>
 
@@ -403,9 +319,7 @@ export default function ChatBox({
 
                 {source.filePath && (
                   <button
-                    onClick={() =>
-                      handleViewSource(source)
-                    }
+                    onClick={() => handleViewSource(source)}
                     className="flex-shrink-0 text-gray-400 hover:text-blue-600 cursor-pointer"
                     title="View PDF"
                   >
@@ -449,10 +363,7 @@ export default function ChatBox({
         ) : (
           <>
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className="mb-10"
-              >
+              <div key={message.id} className="mb-10">
                 <div className="flex justify-end mb-5">
                   <div className="max-w-[80%] rounded-2xl rounded-tr-md bg-blue-600 px-5 py-3 text-white shadow-sm">
                     <p className="text-xs font-medium mb-1 opacity-80">
@@ -500,15 +411,11 @@ export default function ChatBox({
 
                       <div className="rounded-2xl rounded-tl-md bg-slate-50 border border-gray-200 px-5 py-5">
                         <div className="text-[15px]">
-                          {formatAnswer(
-                            message.answer
-                          )}
+                          {formatAnswer(message.answer)}
                         </div>
                       </div>
 
-                      {renderSources(
-                        message.sources
-                      )}
+                      {renderSources(message.sources)}
                     </div>
                   </div>
                 )}
@@ -519,14 +426,10 @@ export default function ChatBox({
       </div>
 
       <div className="border-t bg-white p-5">
-       
-
         <div className="mt-4 flex gap-3">
           <input
             value={question}
-            onChange={(e) =>
-              setQuestion(e.target.value)
-            }
+            onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
             placeholder="Ask a question about your notes..."
@@ -535,10 +438,7 @@ export default function ChatBox({
 
           <button
             onClick={handleAsk}
-            disabled={
-              loading ||
-              !question.trim()
-            }
+            disabled={loading || !question.trim()}
             className="w-16 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white flex items-center justify-center transition"
           >
             {loading ? (

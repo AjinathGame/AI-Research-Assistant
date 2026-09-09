@@ -1,5 +1,4 @@
 import express from "express";
-
 import {
   createTechnology,
   getTechnologies,
@@ -7,26 +6,14 @@ import {
   deleteTechnology,
   getTechnologyBySlug,
 } from "../controllers/technologyController.js";
+import { protect } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
 
-router.post("/", createTechnology);
-
-router.get("/", getTechnologies);
-
-router.get(
-  "/slug/:slug",
-  getTechnologyBySlug
-);
-
-router.get(
-  "/:id",
-  getTechnologyById
-);
-
-router.delete(
-  "/:id",
-  deleteTechnology
-);
+router.post("/", protect, createTechnology);
+router.get("/", protect, getTechnologies);
+router.get("/slug/:slug", protect, getTechnologyBySlug);
+router.get("/:id", protect, getTechnologyById);
+router.delete("/:id", protect, deleteTechnology);
 
 export default router;

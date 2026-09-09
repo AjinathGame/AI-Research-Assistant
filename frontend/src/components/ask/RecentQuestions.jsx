@@ -16,6 +16,19 @@ export default function RecentQuestions({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Authentication token not found");
+    }
+
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+  };
+
   useEffect(() => {
     loadChatHistory();
   }, []);
@@ -26,7 +39,11 @@ export default function RecentQuestions({
       setError("");
 
       const response = await fetch(
-        `${API_BASE_URL}/chat/history`
+        `${API_BASE_URL}/chat/history`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+        }
       );
 
       const data = await response.json();
@@ -64,6 +81,7 @@ export default function RecentQuestions({
         `${API_BASE_URL}/chat/history`,
         {
           method: "DELETE",
+          headers: getAuthHeaders(),
         }
       );
 
@@ -131,13 +149,9 @@ export default function RecentQuestions({
 
   return (
     <section className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
-
       <div className="p-5 border-b border-gray-100">
-
         <div className="flex items-center justify-between gap-3">
-
           <div className="flex items-center gap-3">
-
             <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
               <MessageCircle
                 size={20}
@@ -154,7 +168,6 @@ export default function RecentQuestions({
                 Your previous questions
               </p>
             </div>
-
           </div>
 
           {questions.length > 0 && (
@@ -176,13 +189,10 @@ export default function RecentQuestions({
               Clear
             </button>
           )}
-
         </div>
-
       </div>
 
       <div className="max-h-[520px] overflow-y-auto p-4">
-
         {loading ? (
           <div className="flex items-center justify-center py-10">
             <Loader2
@@ -196,7 +206,6 @@ export default function RecentQuestions({
           </div>
         ) : questions.length === 0 ? (
           <div className="py-10 text-center">
-
             <MessageCircle
               size={38}
               className="mx-auto text-gray-300"
@@ -209,17 +218,18 @@ export default function RecentQuestions({
             <p className="mt-1 text-sm text-gray-400">
               Your recent questions will appear here.
             </p>
-
           </div>
         ) : (
           <div className="space-y-3">
-
             {questions.map((item) => (
               <button
                 key={item._id}
                 type="button"
                 onClick={() => {
-                  console.log("CLICKED QUESTION:", item);
+                  console.log(
+                    "CLICKED QUESTION:",
+                    item
+                  );
 
                   if (onQuestionSelect) {
                     onQuestionSelect(item);
@@ -227,9 +237,7 @@ export default function RecentQuestions({
                 }}
                 className="w-full text-left rounded-2xl border border-gray-200 p-4 hover:border-blue-300 hover:bg-blue-50/40 transition cursor-pointer"
               >
-
                 <div className="flex items-start gap-3">
-
                   <div className="w-8 h-8 flex-shrink-0 rounded-lg bg-blue-50 flex items-center justify-center">
                     <MessageCircle
                       size={16}
@@ -238,13 +246,11 @@ export default function RecentQuestions({
                   </div>
 
                   <div className="min-w-0 flex-1">
-
                     <p className="text-sm font-medium text-slate-900 line-clamp-3">
                       {item.question}
                     </p>
 
                     <div className="flex items-center gap-2 mt-2">
-
                       <Clock
                         size={13}
                         className="text-gray-400"
@@ -253,21 +259,14 @@ export default function RecentQuestions({
                       <span className="text-xs text-gray-400">
                         {formatDate(item.createdAt)}
                       </span>
-
                     </div>
-
                   </div>
-
                 </div>
-
               </button>
             ))}
-
           </div>
         )}
-
       </div>
-
     </section>
   );
 }

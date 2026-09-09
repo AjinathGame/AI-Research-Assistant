@@ -1,8 +1,21 @@
 import API_BASE_URL from "./api";
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+};
+
 export const getFoldersByTechnology = async (technologyId) => {
   const response = await fetch(
-    `${API_BASE_URL}/folders/technology/${technologyId}`
+    `${API_BASE_URL}/folders/technology/${technologyId}`,
+    {
+      method: "GET",
+      headers: getAuthHeaders(),
+    }
   );
 
   const data = await response.json();
@@ -16,8 +29,6 @@ export const getFoldersByTechnology = async (technologyId) => {
   return data;
 };
 
-
-
 export const createFolder = async ({
   name,
   slug,
@@ -29,9 +40,7 @@ export const createFolder = async ({
     `${API_BASE_URL}/folders`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         name,
         slug,
@@ -53,11 +62,13 @@ export const createFolder = async ({
   return data;
 };
 
-
-
 export const getPdfsByFolder = async (folderId) => {
   const response = await fetch(
-    `${API_BASE_URL}/pdf/folder/${folderId}`
+    `${API_BASE_URL}/pdf/folder/${folderId}`,
+    {
+      method: "GET",
+      headers: getAuthHeaders(),
+    }
   );
 
   const data = await response.json();
@@ -71,12 +82,12 @@ export const getPdfsByFolder = async (folderId) => {
   return data;
 };
 
-
 export const deleteFolder = async (folderId) => {
   const response = await fetch(
     `${API_BASE_URL}/folders/${folderId}`,
     {
       method: "DELETE",
+      headers: getAuthHeaders(),
     }
   );
 

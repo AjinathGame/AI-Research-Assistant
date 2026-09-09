@@ -1,6 +1,7 @@
-import { askQuestion } from "../services/rag_service.js";
+import { askQuestion } from "../services/rag_Service.js";
 import ChatHistory from "../models/chatHistory.js";
 import Question from "../models/Question.js";
+import { createActivity } from "../services/activityService.js";
 
 export const askChatQuestion = async (req, res) => {
   try {
@@ -11,7 +12,14 @@ export const askChatQuestion = async (req, res) => {
       topK = 5,
     } = req.body;
 
-    const userId = "user-001";
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const userId = req.user._id;
 
     if (!question || !question.trim()) {
       return res.status(400).json({
@@ -34,17 +42,34 @@ export const askChatQuestion = async (req, res) => {
       });
     }
 
+    const startTime = Date.now();
+
     const result = await askQuestion({
-      question,
-      userId,
-      technologyId,
-      folderId,
-      topK,
+      question: question.trim(),
+      userId: String(userId),
+      technologyId: String(technologyId),
+      folderId: String(folderId),
+      topK: Number(topK) || 5,
     });
 
-    await Question.create({
+    const responseTime =
+      (Date.now() - startTime) / 1000;
+
+    const answer =
+      typeof result?.answer === "string"
+        ? result.answer.trim()
+        : "";
+
+    const status = answer
+      ? "Answered"
+      : "Pending";
+
+    const savedQuestion = await Question.create({
       userId,
       question: question.trim(),
+      answer,
+      status,
+      responseTime,
       technologyId,
       folderId,
     });
@@ -52,18 +77,34 @@ export const askChatQuestion = async (req, res) => {
     await ChatHistory.create({
       userId,
       question: question.trim(),
-      answer: result.answer,
+      answer,
       technologyId,
       folderId,
-      sources: result.sources || [],
+      sources: Array.isArray(result?.sources)
+        ? result.sources
+        : [],
+    });
+
+    await createActivity({
+      type: "question_asked",
+      title: "Question asked",
+      description: question.trim(),
+      userId,
+      entityId: savedQuestion._id,
+      entityType: "Question",
     });
 
     return res.status(200).json({
       success: true,
       message: "Answer generated successfully",
-      data: result,
+      data: {
+        ...result,
+        answer,
+        questionId: savedQuestion._id,
+        status: savedQuestion.status,
+        responseTime: savedQuestion.responseTime,
+      },
     });
-
   } catch (error) {
     console.error("Chat Error:", error);
 
@@ -77,13 +118,22 @@ export const askChatQuestion = async (req, res) => {
 
 export const getChatHistory = async (req, res) => {
   try {
-    const userId = "user-001";
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const userId = req.user._id;
 
     const history = await ChatHistory.find({
       userId,
-    }).sort({
-      createdAt: -1,
-    });
+    })
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
 
     return res.status(200).json({
       success: true,
@@ -91,7 +141,6 @@ export const getChatHistory = async (req, res) => {
       count: history.length,
       data: history,
     });
-
   } catch (error) {
     console.error(
       "Get Chat History Error:",
@@ -108,22 +157,32 @@ export const getChatHistory = async (req, res) => {
 
 export const deleteChatHistory = async (req, res) => {
   try {
-    const userId = "user-001";
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
 
-    const result = await ChatHistory.deleteMany({
-      userId,
-    });
+    const userId = req.user._id;
 
-    await Question.deleteMany({
-      userId,
-    });
+    const chatResult =
+      await ChatHistory.deleteMany({
+        userId,
+      });
+
+    const questionResult =
+      await Question.deleteMany({
+        userId,
+      });
 
     return res.status(200).json({
       success: true,
       message: "Chat history deleted successfully",
-      deletedCount: result.deletedCount,
+      deletedCount: chatResult.deletedCount,
+      deletedQuestions:
+        questionResult.deletedCount,
     });
-
   } catch (error) {
     console.error(
       "Delete Chat History Error:",

@@ -3,10 +3,12 @@ import "dotenv/config";
 import express from "express";
 import dotenv from "dotenv";
 import path from "path";
-
-dotenv.config();
 import cors from "cors";
+import { fileURLToPath } from "url";
+import passport from "passport";
+
 import connectDB from "./app/config/connectDB.js";
+
 import pdfRoutes from "./app/routes/pdfRoutes.js";
 import chatRoutes from "./app/routes/chatRoutes.js";
 import technologyRoutes from "./app/routes/technologyRoutes.js";
@@ -15,14 +17,17 @@ import authRoutes from "./app/routes/authroutes.js";
 import loginRoutes from "./app/routes/loginRoutes.js";
 import verificationRoutes from "./app/routes/verificationRoutes.js";
 import googleRoutes from "./app/routes/googleRoutes.js";
+import adminRoutes from "./app/routes/adminRoutes.js";
 import googleCallbackRoutes from "./app/routes/googlecallbackRoutes.js";
 import githubCallbackRoutes from "./app/routes/githubcallBackRoutes.js";
+
 import "./app/config/passport.js";
-import passport from "passport";
 import "./app/config/githubPassport.js";
 
+dotenv.config();
 
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,20 +38,27 @@ app.use(passport.initialize());
 
 app.use(
   "/storage",
-  express.static(path.join(process.cwd(), "storage"))
+  express.static(path.join(__dirname, "storage"))
+);
+
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "storage", "uploads"))
 );
 
 app.use("/api/pdf", pdfRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/technologies", technologyRoutes);
 app.use("/api/folders", folderRoutes);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", loginRoutes);
-app.use("/api/auth",googleRoutes);
-app.use("/api/auth",googleCallbackRoutes);
+app.use("/api/auth", googleRoutes);
+app.use("/api/auth", googleCallbackRoutes);
 app.use("/api/auth", githubCallbackRoutes);
-app.use("/api/auth/verify-email",verificationRoutes);
+app.use("/api/auth/verify-email", verificationRoutes);
 
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   res.json({

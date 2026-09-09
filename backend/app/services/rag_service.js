@@ -182,20 +182,27 @@ print("RAG_RESULT:" + json.dumps(result))
   });
 };
 
-export const deletePdf = ({
-  pdfId,
-}) => {
+export const deletePdf = ({ pdfId }) => {
   return new Promise((resolve, reject) => {
     const backendPath = path.resolve(__dirname, "../../");
 
     const pythonCode = `
+import json
 from app.rag.vector_store import delete_pdf
 
-result = delete_pdf(
-    pdf_id=${JSON.stringify(pdfId)}
-)
+try:
+    result = delete_pdf(
+        pdf_id=${JSON.stringify(pdfId)}
+    )
 
-print("RAG_RESULT:" + str(result))
+    print("RAG_RESULT:" + json.dumps({
+        "success": True,
+        "deletedChunks": result
+    }))
+
+except Exception as e:
+    print("RAG_ERROR:" + str(e))
+    raise
 `;
 
     const python = spawn(
@@ -218,12 +225,16 @@ print("RAG_RESULT:" + str(result))
     });
 
     python.on("close", (code) => {
-      if (code !== 0) {
-        console.error("Python RAG Delete Error:");
-        console.error(errorOutput);
+      console.log("RAG DELETE EXIT CODE:", code);
+      console.log("RAG DELETE OUTPUT:", output);
+      console.log("RAG DELETE ERROR:", errorOutput);
 
+      if (code !== 0) {
         return reject(
-          new Error("RAG PDF deletion failed")
+          new Error(
+            errorOutput.trim() ||
+            "RAG PDF deletion failed"
+          )
         );
       }
 
@@ -231,20 +242,35 @@ print("RAG_RESULT:" + str(result))
       const index = output.lastIndexOf(marker);
 
       if (index === -1) {
-        console.error(output);
-
         return reject(
           new Error("Invalid RAG delete response")
         );
       }
 
-      const result = output
+      const jsonResult = output
         .substring(index + marker.length)
         .trim();
 
-      resolve({
-        deletedChunks: Number(result),
-      });
+      try {
+        const result = JSON.parse(jsonResult);
+
+        resolve({
+          deletedChunks: Number(
+            result.deletedChunks || 0
+          ),
+        });
+      } catch (error) {
+        console.error(
+          "Invalid RAG delete JSON:",
+          jsonResult
+        );
+
+        reject(
+          new Error(
+            "Failed to parse RAG delete response"
+          )
+        );
+      }
     });
   });
 };

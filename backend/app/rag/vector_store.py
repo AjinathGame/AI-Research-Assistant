@@ -12,7 +12,6 @@ CHROMA_DIR = os.environ.get(
     str(Path(__file__).resolve().parents[2] / "chroma_db")
 )
 
-
 Path(CHROMA_DIR).mkdir(parents=True, exist_ok=True)
 
 
@@ -43,11 +42,11 @@ def add_chunks(chunks: List[Dict[str, Any]]) -> int:
         )
 
         metadatas.append({
-            "pdf_id": chunk["pdf_id"],
-            "user_id": chunk["user_id"],
+            "pdf_id": str(chunk["pdf_id"]),
+            "user_id": str(chunk["user_id"]),
             "filename": chunk["filename"],
-            "technology_id": chunk["technology_id"],
-            "folder_id": chunk["folder_id"],
+            "technology_id": str(chunk["technology_id"]),
+            "folder_id": str(chunk["folder_id"]),
             "page": chunk["page"],
         })
 
@@ -65,22 +64,60 @@ def add_chunks(chunks: List[Dict[str, Any]]) -> int:
 
     return len(documents)
 
+
 def delete_pdf(pdf_id: str) -> int:
-    existing = _collection.get(
-        where={"pdf_id": pdf_id}
-    )
+    """
+    Delete all ChromaDB chunks belonging to a PDF.
 
-    ids = existing.get("ids", []) if existing else []
+    Returns:
+        Number of deleted chunks.
+    """
 
-    if ids:
-        _collection.delete(ids=ids)
+    if not pdf_id:
+        return 0
 
-    return len(ids)
+    pdf_id = str(pdf_id).strip()
+
+    if not pdf_id:
+        return 0
+
+    try:
+        existing = _collection.get(
+            where={
+                "pdf_id": pdf_id
+            },
+            include=[]
+        )
+
+        ids = existing.get("ids", []) if existing else []
+
+        if not ids:
+            return 0
+
+        _collection.delete(
+            ids=ids
+        )
+
+        return len(ids)
+
+    except Exception as error:
+        print(f"ChromaDB PDF deletion error: {error}")
+        raise
 
 
 def get_pdf_chunks(pdf_id: str) -> List[Dict[str, Any]]:
+    if not pdf_id:
+        return []
+
+    pdf_id = str(pdf_id).strip()
+
+    if not pdf_id:
+        return []
+
     result = _collection.get(
-        where={"pdf_id": pdf_id}
+        where={
+            "pdf_id": pdf_id
+        }
     )
 
     if not result or not result.get("ids"):
@@ -95,8 +132,16 @@ def get_pdf_chunks(pdf_id: str) -> List[Dict[str, Any]]:
     for i, chunk_id in enumerate(ids):
         chunks.append({
             "id": chunk_id,
-            "text": documents[i] if i < len(documents) else "",
-            "metadata": metadatas[i] if i < len(metadatas) else {},
+            "text": (
+                documents[i]
+                if i < len(documents)
+                else ""
+            ),
+            "metadata": (
+                metadatas[i]
+                if i < len(metadatas)
+                else {}
+            ),
         })
 
     return chunks
@@ -113,11 +158,13 @@ def search_chunks(
     if not query or not query.strip():
         return []
 
-    if not user_id or not user_id.strip():
+    if not user_id or not str(user_id).strip():
         return []
 
     if top_k <= 0:
         return []
+
+    user_id = str(user_id).strip()
 
     query_embedding = embed_query(query)
 
@@ -129,12 +176,12 @@ def search_chunks(
 
     if technology_id and technology_id.lower() != "all":
         conditions.append({
-            "technology_id": technology_id
+            "technology_id": str(technology_id)
         })
 
     if folder_id and folder_id.lower() != "all":
         conditions.append({
-            "folder_id": folder_id
+            "folder_id": str(folder_id)
         })
 
     if len(conditions) == 1:
@@ -163,9 +210,20 @@ def search_chunks(
     if not ids:
         return []
 
-    documents = result.get("documents", [[]])[0]
-    metadatas = result.get("metadatas", [[]])[0]
-    distances = result.get("distances", [[]])[0]
+    documents = result.get(
+        "documents",
+        [[]]
+    )[0]
+
+    metadatas = result.get(
+        "metadatas",
+        [[]]
+    )[0]
+
+    distances = result.get(
+        "distances",
+        [[]]
+    )[0]
 
     results = []
 
@@ -190,7 +248,11 @@ def search_chunks(
 
         results.append({
             "id": chunk_id,
-            "text": documents[i] if i < len(documents) else "",
+            "text": (
+                documents[i]
+                if i < len(documents)
+                else ""
+            ),
             "pdf_id": metadata.get("pdf_id"),
             "pdf_name": metadata.get("filename"),
             "page": metadata.get("page"),

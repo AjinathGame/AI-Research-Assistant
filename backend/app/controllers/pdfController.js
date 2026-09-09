@@ -6,7 +6,9 @@ import Question from "../models/Question.js";
 import {
   indexPdf,
   deletePdf as deletePdfFromRag,
-} from "../services/rag_service.js";
+} from "../services/rag_Service.js";
+
+import { createActivity } from "../services/activityService.js";
 
 import fs from "fs";
 import path from "path";
@@ -24,6 +26,13 @@ export const uploadPdf = async (req, res) => {
   let pdf = null;
 
   try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -40,7 +49,12 @@ export const uploadPdf = async (req, res) => {
     } = req.body;
 
     if (!technologyId) {
-      fs.unlinkSync(temporaryFilePath);
+      if (
+        temporaryFilePath &&
+        fs.existsSync(temporaryFilePath)
+      ) {
+        fs.unlinkSync(temporaryFilePath);
+      }
 
       return res.status(400).json({
         success: false,
@@ -49,7 +63,12 @@ export const uploadPdf = async (req, res) => {
     }
 
     if (!folderId) {
-      fs.unlinkSync(temporaryFilePath);
+      if (
+        temporaryFilePath &&
+        fs.existsSync(temporaryFilePath)
+      ) {
+        fs.unlinkSync(temporaryFilePath);
+      }
 
       return res.status(400).json({
         success: false,
@@ -64,7 +83,12 @@ export const uploadPdf = async (req, res) => {
     ];
 
     if (!visibility) {
-      fs.unlinkSync(temporaryFilePath);
+      if (
+        temporaryFilePath &&
+        fs.existsSync(temporaryFilePath)
+      ) {
+        fs.unlinkSync(temporaryFilePath);
+      }
 
       return res.status(400).json({
         success: false,
@@ -73,7 +97,12 @@ export const uploadPdf = async (req, res) => {
     }
 
     if (!allowedVisibility.includes(visibility)) {
-      fs.unlinkSync(temporaryFilePath);
+      if (
+        temporaryFilePath &&
+        fs.existsSync(temporaryFilePath)
+      ) {
+        fs.unlinkSync(temporaryFilePath);
+      }
 
       return res.status(400).json({
         success: false,
@@ -83,26 +112,38 @@ export const uploadPdf = async (req, res) => {
 
     const technology = await Technology.findOne({
       _id: technologyId,
+      userId: req.user._id,
       isActive: true,
     });
 
     if (!technology) {
-      fs.unlinkSync(temporaryFilePath);
+      if (
+        temporaryFilePath &&
+        fs.existsSync(temporaryFilePath)
+      ) {
+        fs.unlinkSync(temporaryFilePath);
+      }
 
       return res.status(404).json({
         success: false,
-        message: "Technology not found or inactive",
+        message:
+          "Technology not found or inactive",
       });
     }
 
     const folder = await Folder.findOne({
       _id: folderId,
-      technologyId,
+      technologyId: technology._id,
       isActive: true,
     });
 
     if (!folder) {
-      fs.unlinkSync(temporaryFilePath);
+      if (
+        temporaryFilePath &&
+        fs.existsSync(temporaryFilePath)
+      ) {
+        fs.unlinkSync(temporaryFilePath);
+      }
 
       return res.status(400).json({
         success: false,
@@ -157,7 +198,24 @@ export const uploadPdf = async (req, res) => {
 
     temporaryFilePath = null;
 
+    console.log(
+      "Creating PDF document in MongoDB..."
+    );
+
+    console.log("PDF data:", {
+      userId: req.user._id.toString(),
+      filename: uniqueName,
+      originalName: req.file.originalname,
+      filePath: finalFilePath,
+      technologyId: technology._id.toString(),
+      folderId: folder._id.toString(),
+      fileSize: req.file.size,
+      visibility,
+      status: "processing",
+    });
+
     pdf = await Pdf.create({
+      userId: req.user._id,
       filename: uniqueName,
       originalName: req.file.originalname,
       filePath: finalFilePath,
@@ -171,15 +229,19 @@ export const uploadPdf = async (req, res) => {
     });
 
     console.log(
+      "PDF MongoDB document created:",
+      pdf._id.toString()
+    );
+
+    console.log(
       `PDF saved in folder: ${technology.slug}/${folder.slug}`
     );
 
-    
     try {
       const ragResult = await indexPdf({
         filePath: finalFilePath,
         pdfId: pdf._id.toString(),
-        userId: "user-001",
+        userId: req.user._id.toString(),
         filename: req.file.originalname,
         technologyId: technology._id.toString(),
         folderId: folder._id.toString(),
@@ -188,24 +250,31 @@ export const uploadPdf = async (req, res) => {
       pdf.status = "processed";
 
       pdf.pages =
-        Number(ragResult.pages) || 0;
+        Number(ragResult?.pages) || 0;
 
       pdf.chunkCount =
-        Number(ragResult.chunkCount) || 0;
+        Number(ragResult?.chunkCount) || 0;
 
       await pdf.save();
+
+      await createActivity({
+        type: "document_uploaded",
+        title: "New document uploaded",
+        description: req.file.originalname,
+        userId: req.user._id,
+        entityId: pdf._id,
+        entityType: "Pdf",
+      });
 
       return res.status(201).json({
         success: true,
         message:
           "PDF uploaded and indexed successfully",
-
         data: {
           pdf,
           rag: ragResult,
         },
       });
-
     } catch (ragError) {
       pdf.status = "failed";
 
@@ -223,7 +292,6 @@ export const uploadPdf = async (req, res) => {
         error: ragError.message,
       });
     }
-
   } catch (error) {
     if (
       temporaryFilePath &&
@@ -235,6 +303,16 @@ export const uploadPdf = async (req, res) => {
     console.error(
       "PDF Upload Error:",
       error
+    );
+
+    console.error(
+      "PDF Upload Error Message:",
+      error.message
+    );
+
+    console.error(
+      "PDF Upload Error Stack:",
+      error.stack
     );
 
     return res.status(500).json({
@@ -256,7 +334,10 @@ export const viewPdf = async (req, res) => {
       });
     }
 
-    const pdf = await Pdf.findById(pdfId);
+    const pdf = await Pdf.findOne({
+      _id: pdfId,
+      userId: req.user._id,
+    });
 
     if (!pdf) {
       return res.status(404).json({
@@ -268,7 +349,8 @@ export const viewPdf = async (req, res) => {
     if (!pdf.filePath) {
       return res.status(404).json({
         success: false,
-        message: "PDF file path not found",
+        message:
+          "PDF file path not found",
       });
     }
 
@@ -293,7 +375,6 @@ export const viewPdf = async (req, res) => {
     return res.sendFile(
       path.resolve(pdf.filePath)
     );
-
   } catch (error) {
     console.error(
       "View PDF Error:",
@@ -319,7 +400,10 @@ export const deletePdf = async (req, res) => {
       });
     }
 
-    const pdf = await Pdf.findById(pdfId);
+    const pdf = await Pdf.findOne({
+      _id: pdfId,
+      userId: req.user._id,
+    });
 
     if (!pdf) {
       return res.status(404).json({
@@ -342,17 +426,24 @@ export const deletePdf = async (req, res) => {
 
     await Pdf.findByIdAndDelete(pdfId);
 
+    await createActivity({
+      type: "document_deleted",
+      title: "Document deleted",
+      description: pdf.originalName,
+      userId: req.user._id,
+      entityId: pdf._id,
+      entityType: "Pdf",
+    });
+
     return res.status(200).json({
       success: true,
       message: "PDF deleted successfully",
-
       data: {
         pdfId,
         deletedChunks:
           ragResult.deletedChunks,
       },
     });
-
   } catch (error) {
     console.error(
       "PDF Delete Error:",
@@ -369,13 +460,20 @@ export const deletePdf = async (req, res) => {
 
 export const getPdfList = async (req, res) => {
   try {
-
-     const userId = "6a80b25c6e489cf2c83167b2";
-
-    // const userId= "6a80b2916e489cf2c83167b3";
-
-    const pdfs = await Pdf.find({userId: userId})
-      .sort({ createdAt: -1 });
+    const pdfs = await Pdf.find({
+      userId: req.user._id,
+    })
+      .populate(
+        "technologyId",
+        "name slug"
+      )
+      .populate(
+        "folderId",
+        "name slug"
+      )
+      .sort({
+        createdAt: -1,
+      });
 
     return res.status(200).json({
       success: true,
@@ -383,7 +481,6 @@ export const getPdfList = async (req, res) => {
         "PDF list fetched successfully",
       data: pdfs,
     });
-
   } catch (error) {
     console.error(
       "PDF List Error:",
@@ -425,8 +522,23 @@ export const getPdfsByFolder = async (
       });
     }
 
+    const technology =
+      await Technology.findOne({
+        _id: folder.technologyId,
+        userId: req.user._id,
+        isActive: true,
+      });
+
+    if (!technology) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
     const pdfs = await Pdf.find({
       folderId,
+      userId: req.user._id,
     })
       .populate(
         "technologyId",
@@ -446,7 +558,6 @@ export const getPdfsByFolder = async (
         "PDFs fetched successfully",
       data: pdfs,
     });
-
   } catch (error) {
     console.error(
       "Get PDFs By Folder Error:",
@@ -462,9 +573,17 @@ export const getPdfsByFolder = async (
   }
 };
 
-export const getDashboardStats = async (req, res) => {
+export const getDashboardStats = async (
+  req,
+  res
+) => {
   try {
     const stats = await Pdf.aggregate([
+      {
+        $match: {
+          userId: req.user._id,
+        },
+      },
       {
         $group: {
           _id: null,
@@ -482,7 +601,9 @@ export const getDashboardStats = async (req, res) => {
     ]);
 
     const questionsAsked =
-      await Question.countDocuments();
+      await Question.countDocuments({
+        userId: req.user._id,
+      });
 
     const result = stats[0] || {
       totalPdfs: 0,
@@ -499,7 +620,6 @@ export const getDashboardStats = async (req, res) => {
         questionsAsked,
       },
     });
-
   } catch (error) {
     console.error(
       "Dashboard Stats Error:",
