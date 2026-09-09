@@ -3,10 +3,6 @@ import bcrypt from "bcryptjs";
 import User from "../models/auth.js";
 import { sendResetPasswordEmail } from "../utils/sendEmail.js";
 
-// ========================================
-// FORGOT PASSWORD
-// ========================================
-
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -29,12 +25,10 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    // Generate reset token
     const resetToken = crypto
       .randomBytes(32)
       .toString("hex");
 
-    // Token expires in 15 minutes
     const resetTokenExpires = new Date(
       Date.now() + 15 * 60 * 1000
     );
@@ -50,7 +44,6 @@ export const forgotPassword = async (req, res) => {
       resetTokenExpires
     );
 
-    // Send reset email
     await sendResetPasswordEmail(
       user.email,
       resetToken
@@ -74,10 +67,6 @@ export const forgotPassword = async (req, res) => {
     });
   }
 };
-
-// ========================================
-// RESET PASSWORD
-// ========================================
 
 export const resetPassword = async (req, res) => {
   try {
@@ -106,7 +95,6 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    // Find user using valid token
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: {
@@ -122,7 +110,6 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(
       password,
       10

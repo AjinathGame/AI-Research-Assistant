@@ -6,14 +6,12 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Required fields
     if (!email || !password) {
       return res.status(400).json({
         message: "Email and password are required",
       });
     }
 
-    // Find user
     const user = await User.findOne({
       email: email.toLowerCase(),
     });
@@ -24,14 +22,12 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Check email verification
     if (!user.isVerified) {
       return res.status(403).json({
         message: "Please verify your email before login",
       });
     }
 
-    // Google/GitHub account
     if (!user.password) {
       return res.status(400).json({
         message:
@@ -39,7 +35,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Compare password
     const isPasswordMatch = await bcrypt.compare(
       password,
       user.password
@@ -51,7 +46,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Generate JWT
     const token = jwt.sign(
       {
         id: user._id,

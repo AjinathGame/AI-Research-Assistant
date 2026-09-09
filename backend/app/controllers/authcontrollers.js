@@ -57,13 +57,9 @@ export const registerUser = async (req, res) => {
                     "Password must be at least 5 characters and contain uppercase, lowercase, number and special character",
             });
         }
-        // Check existing user
-        console.log("1. Checking existing user...");
+    
 
         const existingUser = await User.findOne({ email });
-
-        console.log("2. User check completed");
-
 
 
         if (existingUser) {
@@ -72,7 +68,6 @@ export const registerUser = async (req, res) => {
             });
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const verificationToken = crypto.randomBytes(32).toString("hex");
@@ -94,13 +89,6 @@ export const registerUser = async (req, res) => {
             verificationTokenExpires,
             
         });
-
-        console.log("SAVED TOKEN =", user.verificationToken);
-        console.log("SAVED EXPIRES =", user.verificationTokenExpires);
-
-        console.log("4. User created");
-
-        console.log("5. Sending verification email...");
 
         await sendVerificationEmail(email, verificationToken);
 
@@ -124,15 +112,12 @@ export const registerUser = async (req, res) => {
     }
 };
 
-// =====================================================
-// DELETE ACCOUNT
-// =====================================================
 
 export const deleteAccount = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Find logged-in user
+
     const user = await User.findById(userId);
 
     if (!user) {
@@ -142,7 +127,6 @@ export const deleteAccount = async (req, res) => {
       });
     }
 
-    // Delete complete user document
     await User.findByIdAndDelete(userId);
 
     return res.status(200).json({
