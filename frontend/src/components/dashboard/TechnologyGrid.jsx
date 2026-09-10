@@ -23,21 +23,13 @@ import {
   deleteTechnology,
 } from "../../api/technologyApi";
 
+import ConfirmModal from "../common/ConfirmModal";
+
 const technologyStyles = {
   "Artificial Intelligence": {
     icon: Brain,
     color: "bg-blue-100 text-blue-600",
   },
-
-  // "Machine Learning": {
-  //   icon: Cpu,
-  //   color: "bg-green-100 text-green-600",
-  // },
-
-  // Networking: {
-  //   icon: Network,
-  //   color: "bg-purple-100 text-purple-600",
-  // },
 
   Database: {
     icon: Database,
@@ -81,9 +73,7 @@ export default function TechnologyGrid() {
   const navigate = useNavigate();
 
   const [technologies, setTechnologies] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
 
   const [showCreateModal, setShowCreateModal] =
@@ -96,6 +86,11 @@ export default function TechnologyGrid() {
     useState("");
 
   const [creating, setCreating] = useState(false);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    technology: null,
+  });
 
   const [deletingId, setDeletingId] =
     useState(null);
@@ -184,7 +179,9 @@ export default function TechnologyGrid() {
         newTechnology,
       ]);
 
-      closeCreateModal();
+      setShowCreateModal(false);
+      setTechnologyName("");
+      setTechnologyDescription("");
     } catch (error) {
       console.error(
         "Create Technology Error:",
@@ -200,15 +197,47 @@ export default function TechnologyGrid() {
     }
   };
 
-  const handleDeleteTechnology = async (
-    technology
-  ) => {
-    const confirmed =
-      window.confirm(
-        `Are you sure you want to delete "${technology.name}"?`
+  const openDeleteModal = (technology) => {
+    if (!technology?._id) {
+      setError(
+        "Technology ID is not available."
+      );
+      return;
+    }
+
+    setError("");
+
+    setConfirmModal({
+      isOpen: true,
+      technology,
+    });
+  };
+
+  const closeConfirmModal = () => {
+    if (deletingId) return;
+
+    setConfirmModal({
+      isOpen: false,
+      technology: null,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    const technology =
+      confirmModal.technology;
+
+    if (!technology?._id) {
+      setError(
+        "Technology ID is not available."
       );
 
-    if (!confirmed) return;
+      setConfirmModal({
+        isOpen: false,
+        technology: null,
+      });
+
+      return;
+    }
 
     try {
       setDeletingId(
@@ -228,6 +257,11 @@ export default function TechnologyGrid() {
             technology._id
         )
       );
+
+      setConfirmModal({
+        isOpen: false,
+        technology: null,
+      });
     } catch (error) {
       console.error(
         "Delete Technology Error:",
@@ -238,6 +272,11 @@ export default function TechnologyGrid() {
         error.message ||
           "Failed to delete technology"
       );
+
+      setConfirmModal({
+        isOpen: false,
+        technology: null,
+      });
     } finally {
       setDeletingId(null);
     }
@@ -247,11 +286,11 @@ export default function TechnologyGrid() {
     return (
       <section className="mt-8 lg:mt-12">
         <div className="mb-8">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900 lg:text-3xl">
             Technologies
           </h2>
 
-          <p className="mt-2 text-sm sm:text-base text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 sm:text-base">
             Browse your uploaded study materials.
           </p>
         </div>
@@ -269,20 +308,21 @@ export default function TechnologyGrid() {
   return (
     <>
       <section className="mt-8 lg:mt-12">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-gray-900 lg:text-3xl">
               Technologies
             </h2>
 
-            <p className="mt-2 text-sm sm:text-base text-gray-500">
+            <p className="mt-2 text-sm text-gray-500 sm:text-base">
               Browse your uploaded study materials.
             </p>
           </div>
 
           <button
+            type="button"
             onClick={openCreateModal}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition cursor-pointer"
+            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
           >
             <Plus size={19} />
             Add Technology
@@ -290,13 +330,21 @@ export default function TechnologyGrid() {
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
-            {error}
+          <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <span>{error}</span>
+
+            <button
+              type="button"
+              onClick={() => setError("")}
+              className="cursor-pointer rounded-lg p-1 text-red-400 transition hover:bg-red-100 hover:text-red-600"
+            >
+              <X size={17} />
+            </button>
           </div>
         )}
 
         {technologies.length === 0 ? (
-          <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-10 text-center">
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
             <Brain
               size={50}
               className="mx-auto text-gray-300"
@@ -311,15 +359,16 @@ export default function TechnologyGrid() {
             </p>
 
             <button
+              type="button"
               onClick={openCreateModal}
-              className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer"
+              className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
             >
               <Plus size={17} />
               Add Technology
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {technologies.map(
               (technology) => {
                 const style =
@@ -339,20 +388,19 @@ export default function TechnologyGrid() {
                     key={
                       technology._id
                     }
-                    className="relative bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                    className="relative rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                   >
                     <div className="flex items-start justify-between">
                       <div
-                        className={`w-14 h-14 rounded-xl flex items-center justify-center ${style.color}`}
+                        className={`flex h-14 w-14 items-center justify-center rounded-xl ${style.color}`}
                       >
-                        <Icon
-                          size={28}
-                        />
+                        <Icon size={28} />
                       </div>
 
                       <button
+                        type="button"
                         onClick={() =>
-                          handleDeleteTechnology(
+                          openDeleteModal(
                             technology
                           )
                         }
@@ -360,7 +408,7 @@ export default function TechnologyGrid() {
                           deletingId ===
                           technology._id
                         }
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer disabled:opacity-50"
+                        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                         title="Delete technology"
                       >
                         {deletingId ===
@@ -381,18 +429,19 @@ export default function TechnologyGrid() {
                       {technology.name}
                     </h3>
 
-                    <p className="mt-1 text-sm text-gray-500 leading-6 line-clamp-2">
+                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-gray-500">
                       {technology.description ||
                         "Study materials and documents."}
                     </p>
 
                     <button
+                      type="button"
                       onClick={() =>
                         handleExplore(
                           technology
                         )
                       }
-                      className="mt-6 cursor-pointer text-indigo-600 font-semibold hover:text-indigo-700 transition"
+                      className="mt-6 cursor-pointer font-semibold text-indigo-600 transition hover:text-indigo-700"
                     >
                       Explore →
                     </button>
@@ -402,12 +451,13 @@ export default function TechnologyGrid() {
             )}
 
             <button
+              type="button"
               onClick={
                 openCreateModal
               }
-              className="min-h-[220px] bg-white rounded-2xl border-2 border-dashed border-gray-300 p-5 flex flex-col items-center justify-center hover:border-indigo-400 hover:bg-indigo-50/30 transition cursor-pointer"
+              className="min-h-[220px] cursor-pointer flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white p-5 transition hover:border-indigo-400 hover:bg-indigo-50/30"
             >
-              <div className="w-14 h-14 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50">
                 <Plus
                   size={30}
                   className="text-indigo-600"
@@ -418,7 +468,7 @@ export default function TechnologyGrid() {
                 Add Technology
               </h3>
 
-              <p className="mt-1 text-sm text-gray-500 text-center">
+              <p className="mt-1 text-center text-sm text-gray-500">
                 Create a new technology manually
               </p>
             </button>
@@ -428,24 +478,25 @@ export default function TechnologyGrid() {
 
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex items-center justify-between mb-5">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-5 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
                   Create New Technology
                 </h2>
 
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="mt-1 text-sm text-gray-500">
                   Add a technology to your knowledge platform.
                 </p>
               </div>
 
               <button
+                type="button"
                 onClick={
                   closeCreateModal
                 }
                 disabled={creating}
-                className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer disabled:opacity-50"
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X size={21} />
               </button>
@@ -453,7 +504,7 @@ export default function TechnologyGrid() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
                   Technology Name
                 </label>
 
@@ -469,12 +520,12 @@ export default function TechnologyGrid() {
                   }
                   placeholder="Enter technology name"
                   disabled={creating}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
                   Description
                 </label>
 
@@ -490,23 +541,25 @@ export default function TechnologyGrid() {
                   placeholder="Enter technology description"
                   rows={4}
                   disabled={creating}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                  className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="mt-6 flex justify-end gap-3">
               <button
+                type="button"
                 onClick={
                   closeCreateModal
                 }
                 disabled={creating}
-                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 cursor-pointer disabled:opacity-50"
+                className="cursor-pointer rounded-xl border border-gray-300 px-4 py-2.5 font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
 
               <button
+                type="button"
                 onClick={
                   handleCreateTechnology
                 }
@@ -514,7 +567,7 @@ export default function TechnologyGrid() {
                   !technologyName.trim() ||
                   creating
                 }
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {creating && (
                   <Loader2
@@ -531,6 +584,33 @@ export default function TechnologyGrid() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={
+          confirmModal.isOpen
+        }
+        onClose={
+          closeConfirmModal
+        }
+        onConfirm={
+          handleConfirmDelete
+        }
+        title="Delete Technology"
+        message={`Are you sure you want to permanently delete "${
+          confirmModal.technology
+            ?.name || "this technology"
+        }"? This action cannot be undone.`}
+        confirmText="Delete Technology"
+        cancelText="Cancel"
+        type="danger"
+        loading={
+          deletingId !== null
+        }
+        itemName={
+          confirmModal.technology
+            ?.name || ""
+        }
+      />
     </>
   );
 }

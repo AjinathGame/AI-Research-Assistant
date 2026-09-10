@@ -4,7 +4,6 @@ import {
   Folder,
   FileText,
   Layers3,
-  Database,
   Eye,
   ExternalLink,
   HardDrive,
@@ -12,14 +11,14 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import {
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import AdminNavbar from "../../components/admin/AdminNavbar";
 import Footer from "../../components/Home/Footer";
-import { getFolderById } from "../../api/adminApi";
+import {
+  getFolderById,
+  viewAdminPdf,
+} from "../../api/adminApi";
 
 const AdminFolderDetails = () => {
   const { id } = useParams();
@@ -36,6 +35,7 @@ const AdminFolderDetails = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [viewingId, setViewingId] = useState(null);
 
   useEffect(() => {
     const fetchFolderDetails = async () => {
@@ -44,7 +44,6 @@ const AdminFolderDetails = () => {
         setError("");
 
         const response = await getFolderById(id);
-
         const responseData = response?.data || {};
 
         setFolder(responseData.folder || null);
@@ -135,84 +134,54 @@ const AdminFolderDetails = () => {
     );
   };
 
-  const getFileUrl = (filePath) => {
-    if (!filePath) {
-      return null;
-    }
-
-    if (
-      filePath.startsWith("http://") ||
-      filePath.startsWith("https://")
-    ) {
-      return filePath;
-    }
-
-    const normalizedPath =
-      filePath.replace(/\\/g, "/");
-
-    const storageIndex =
-      normalizedPath.indexOf("/storage/");
-
-    if (storageIndex !== -1) {
-      const relativePath =
-        normalizedPath.substring(
-          storageIndex + "/storage/".length
-        );
-
-      return `http://localhost:5000/storage/${relativePath}`;
-    }
-
-    const uploadsIndex =
-      normalizedPath.indexOf("/uploads/");
-
-    if (uploadsIndex !== -1) {
-      const relativePath =
-        normalizedPath.substring(
-          uploadsIndex + "/uploads/".length
-        );
-
-      return `http://localhost:5000/uploads/${relativePath}`;
-    }
-
-    if (
-      normalizedPath.startsWith("storage/")
-    ) {
-      return `http://localhost:5000/${normalizedPath}`;
-    }
-
-    if (
-      normalizedPath.startsWith("uploads/")
-    ) {
-      return `http://localhost:5000/${normalizedPath}`;
-    }
-
-    return null;
-  };
-
-  const handleOpenPdf = (pdf) => {
-    if (!pdf?.filePath) {
+  const handleOpenPdf = async (pdf) => {
+    if (!pdf?._id) {
       window.alert(
         "Document file is not available."
       );
       return;
     }
 
-    const fileUrl = getFileUrl(
-      pdf.filePath
-    );
+    try {
+      setViewingId(pdf._id);
 
-    if (!fileUrl) {
-      window.alert(
-        "Unable to open this document."
+      const blob = await viewAdminPdf(pdf._id);
+
+      const blobUrl =
+        URL.createObjectURL(blob);
+
+      const newWindow = window.open(
+        blobUrl,
+        "_blank",
+        "noopener,noreferrer"
       );
-      return;
-    }
 
-    window.open(
-      fileUrl,
-      "_blank",
-      "noopener,noreferrer"
-    );
+      if (!newWindow) {
+        URL.revokeObjectURL(blobUrl);
+
+        window.alert(
+          "Please allow pop-ups in your browser to open the PDF."
+        );
+
+        return;
+      }
+
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 60000);
+    } catch (err) {
+      console.error(
+        "Admin Open PDF Error:",
+        err
+      );
+
+      window.alert(
+        err?.message ||
+          "Unable to open this PDF."
+      );
+    } finally {
+      setViewingId(null);
+    }
   };
 
   const getStatusClass = (status) => {
@@ -302,7 +271,6 @@ const AdminFolderDetails = () => {
 
       <main className="w-full px-4 py-6 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         <div className="mx-auto w-full max-w-[1600px]">
-
           <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
             <button
               type="button"
@@ -342,17 +310,13 @@ const AdminFolderDetails = () => {
 
           <section className="mb-7 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="p-6 md:p-8">
-
               <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
                 <div className="flex items-start gap-4">
-
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
                     <Folder className="h-7 w-7" />
                   </div>
 
                   <div className="min-w-0">
-
                     <p className="text-sm font-medium text-blue-600">
                       Folder
                     </p>
@@ -367,13 +331,10 @@ const AdminFolderDetails = () => {
                         {folder.description}
                       </p>
                     )}
-
                   </div>
-
                 </div>
 
                 <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
-
                   <CalendarDays className="h-5 w-5 text-slate-500" />
 
                   <div>
@@ -387,16 +348,12 @@ const AdminFolderDetails = () => {
                       )}
                     </p>
                   </div>
-
                 </div>
-
               </div>
-
             </div>
           </section>
 
           <section className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
             <StatCard
               title="Total PDFs"
               value={statistics.totalPdfs}
@@ -417,15 +374,11 @@ const AdminFolderDetails = () => {
               icon={Layers3}
               iconClass="bg-purple-50 text-purple-600"
             />
-
           </section>
 
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
             <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
-
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900">
                     PDFs in this Folder
@@ -444,14 +397,11 @@ const AdminFolderDetails = () => {
                     ? "s"
                     : ""}
                 </div>
-
               </div>
-
             </div>
 
             {pdfs.length === 0 ? (
               <div className="flex min-h-[300px] flex-col items-center justify-center px-6 py-12 text-center">
-
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
                   <FileText className="h-7 w-7 text-slate-400" />
                 </div>
@@ -463,18 +413,13 @@ const AdminFolderDetails = () => {
                 <p className="mt-1 text-sm text-slate-500">
                   There are no PDF documents in this folder.
                 </p>
-
               </div>
             ) : (
               <>
-
                 <div className="hidden overflow-x-auto lg:block">
-
                   <table className="w-full min-w-[1000px]">
-
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50 text-left">
-
                         <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
                           Document
                         </th>
@@ -498,220 +443,214 @@ const AdminFolderDetails = () => {
                         <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
                           Action
                         </th>
-
                       </tr>
                     </thead>
 
                     <tbody>
+                      {pdfs.map((pdf) => {
+                        const isViewing =
+                          viewingId === pdf._id;
 
-                      {pdfs.map((pdf) => (
-                        <tr
-                          key={pdf._id}
-                          className="border-b border-slate-100 transition hover:bg-slate-50"
-                        >
+                        return (
+                          <tr
+                            key={pdf._id}
+                            className="border-b border-slate-100 transition hover:bg-slate-50"
+                          >
+                            <td className="px-6 py-4">
+                              <div className="flex min-w-[280px] items-center gap-3">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50">
+                                  <FileText className="h-5 w-5 text-red-500" />
+                                </div>
 
-                          <td className="px-6 py-4">
+                                <div className="min-w-0">
+                                  <p
+                                    className="truncate text-sm font-semibold text-slate-900"
+                                    title={
+                                      pdf.originalName ||
+                                      pdf.filename
+                                    }
+                                  >
+                                    {pdf.originalName ||
+                                      pdf.filename ||
+                                      "Untitled Document"}
+                                  </p>
 
-                            <div className="flex min-w-[280px] items-center gap-3">
-
-                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50">
-                                <FileText className="h-5 w-5 text-red-500" />
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    Added{" "}
+                                    {formatDate(
+                                      pdf.createdAt
+                                    )}
+                                  </p>
+                                </div>
                               </div>
+                            </td>
 
-                              <div className="min-w-0">
+                            <td className="px-4 py-4 text-sm font-medium text-slate-700">
+                              {Number(
+                                pdf.pages || 0
+                              ).toLocaleString()}
+                            </td>
 
-                                <p
-                                  className="truncate text-sm font-semibold text-slate-900"
-                                  title={
-                                    pdf.originalName ||
-                                    pdf.filename
-                                  }
-                                >
-                                  {pdf.originalName ||
-                                    pdf.filename ||
-                                    "Untitled Document"}
-                                </p>
+                            <td className="px-4 py-4 text-sm font-medium text-slate-700">
+                              {Number(
+                                pdf.chunkCount || 0
+                              ).toLocaleString()}
+                            </td>
 
-                                <p className="mt-1 text-xs text-slate-500">
-                                  Added{" "}
-                                  {formatDate(
-                                    pdf.createdAt
-                                  )}
-                                </p>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <HardDrive className="h-4 w-4" />
 
+                                {formatFileSize(
+                                  pdf.fileSize
+                                )}
                               </div>
+                            </td>
 
-                            </div>
-
-                          </td>
-
-                          <td className="px-4 py-4 text-sm font-medium text-slate-700">
-                            {Number(
-                              pdf.pages || 0
-                            ).toLocaleString()}
-                          </td>
-
-                          <td className="px-4 py-4 text-sm font-medium text-slate-700">
-                            {Number(
-                              pdf.chunkCount || 0
-                            ).toLocaleString()}
-                          </td>
-
-                          <td className="px-4 py-4">
-
-                            <div className="flex items-center gap-2 text-sm text-slate-600">
-                              <HardDrive className="h-4 w-4" />
-
-                              {formatFileSize(
-                                pdf.fileSize
-                              )}
-                            </div>
-
-                          </td>
-
-                          <td className="px-4 py-4">
-
-                            <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(
-                                pdf.status
-                              )}`}
-                            >
-                              {getStatusLabel(
-                                pdf.status
-                              )}
-                            </span>
-
-                          </td>
-
-                          <td className="px-6 py-4">
-
-                            <div className="flex justify-end">
-
-                              <button
-                                type="button"
-                                title="Open PDF"
-                                onClick={() =>
-                                  handleOpenPdf(
-                                    pdf
-                                  )
-                                }
-                                className="flex cursor-pointer items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100"
+                            <td className="px-4 py-4">
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(
+                                  pdf.status
+                                )}`}
                               >
-                                <Eye className="h-4 w-4" />
+                                {getStatusLabel(
+                                  pdf.status
+                                )}
+                              </span>
+                            </td>
 
-                                Open PDF
+                            <td className="px-6 py-4">
+                              <div className="flex justify-end">
+                                <button
+                                  type="button"
+                                  title="Open PDF"
+                                  onClick={() =>
+                                    handleOpenPdf(
+                                      pdf
+                                    )
+                                  }
+                                  disabled={isViewing}
+                                  className="flex cursor-pointer items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {isViewing ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
 
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </button>
+                                  {isViewing
+                                    ? "Opening..."
+                                    : "Open PDF"}
 
-                            </div>
-
-                          </td>
-
-                        </tr>
-                      ))}
-
+                                  {!isViewing && (
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
-
                   </table>
-
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 p-4 lg:hidden">
+                  {pdfs.map((pdf) => {
+                    const isViewing =
+                      viewingId === pdf._id;
 
-                  {pdfs.map((pdf) => (
-                    <div
-                      key={pdf._id}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-
-                      <div className="flex items-start gap-3">
-
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50">
-                          <FileText className="h-5 w-5 text-red-500" />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-
-                          <h3
-                            className="break-words text-sm font-semibold text-slate-900"
-                            title={
-                              pdf.originalName ||
-                              pdf.filename
-                            }
-                          >
-                            {pdf.originalName ||
-                              pdf.filename ||
-                              "Untitled Document"}
-                          </h3>
-
-                          <p className="mt-1 text-xs text-slate-500">
-                            Added{" "}
-                            {formatDate(
-                              pdf.createdAt
-                            )}
-                          </p>
-
-                        </div>
-
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-3">
-
-                        <InfoBox
-                          label="Pages"
-                          value={Number(
-                            pdf.pages || 0
-                          ).toLocaleString()}
-                        />
-
-                        <InfoBox
-                          label="Chunks"
-                          value={Number(
-                            pdf.chunkCount || 0
-                          ).toLocaleString()}
-                        />
-
-                        <InfoBox
-                          label="File Size"
-                          value={formatFileSize(
-                            pdf.fileSize
-                          )}
-                        />
-
-                        <InfoBox
-                          label="Status"
-                          value={getStatusLabel(
-                            pdf.status
-                          )}
-                        />
-
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleOpenPdf(pdf)
-                        }
-                        className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                    return (
+                      <div
+                        key={pdf._id}
+                        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                       >
-                        <Eye className="h-4 w-4" />
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50">
+                            <FileText className="h-5 w-5 text-red-500" />
+                          </div>
 
-                        Open PDF
+                          <div className="min-w-0 flex-1">
+                            <h3
+                              className="break-words text-sm font-semibold text-slate-900"
+                              title={
+                                pdf.originalName ||
+                                pdf.filename
+                              }
+                            >
+                              {pdf.originalName ||
+                                pdf.filename ||
+                                "Untitled Document"}
+                            </h3>
 
-                        <ExternalLink className="h-4 w-4" />
-                      </button>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Added{" "}
+                              {formatDate(
+                                pdf.createdAt
+                              )}
+                            </p>
+                          </div>
+                        </div>
 
-                    </div>
-                  ))}
+                        <div className="mt-4 grid grid-cols-2 gap-3">
+                          <InfoBox
+                            label="Pages"
+                            value={Number(
+                              pdf.pages || 0
+                            ).toLocaleString()}
+                          />
 
+                          <InfoBox
+                            label="Chunks"
+                            value={Number(
+                              pdf.chunkCount || 0
+                            ).toLocaleString()}
+                          />
+
+                          <InfoBox
+                            label="File Size"
+                            value={formatFileSize(
+                              pdf.fileSize
+                            )}
+                          />
+
+                          <InfoBox
+                            label="Status"
+                            value={getStatusLabel(
+                              pdf.status
+                            )}
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleOpenPdf(pdf)
+                          }
+                          disabled={isViewing}
+                          className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isViewing ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+
+                          {isViewing
+                            ? "Opening..."
+                            : "Open PDF"}
+
+                          {!isViewing && (
+                            <ExternalLink className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-
               </>
             )}
-
           </section>
-
         </div>
       </main>
 
@@ -728,9 +667,7 @@ const StatCard = ({
 }) => {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-
       <div className="flex items-start justify-between">
-
         <div>
           <p className="text-sm font-medium text-slate-500">
             {title}
@@ -748,9 +685,7 @@ const StatCard = ({
         >
           <Icon className="h-7 w-7" />
         </div>
-
       </div>
-
     </div>
   );
 };
@@ -761,7 +696,6 @@ const InfoBox = ({
 }) => {
   return (
     <div className="rounded-xl bg-slate-50 p-3">
-
       <p className="text-xs text-slate-500">
         {label}
       </p>
@@ -769,7 +703,6 @@ const InfoBox = ({
       <p className="mt-1 truncate text-sm font-semibold text-slate-800">
         {value}
       </p>
-
     </div>
   );
 };

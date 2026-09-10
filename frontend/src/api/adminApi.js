@@ -387,3 +387,36 @@ export const getFolderById = async (id) => {
 
   return data;
 };
+
+export const viewAdminPdf = async (id) => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("Authentication token not found");
+  }
+
+  const response = await fetch(
+    `${API_URL}/pdfs/${id}/view`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    let message = "Failed to open PDF";
+
+    try {
+      const data = await response.json();
+      message = data.message || message;
+    } catch {
+      message = "Failed to open PDF";
+    }
+
+    throw new Error(message);
+  }
+
+  return response.blob();
+};

@@ -64,10 +64,16 @@ const OAuthSuccess = () => {
           return;
         }
 
+        const role =
+          user.role === "admin"
+            ? "admin"
+            : "user";
+
         const userData = {
           id: user.id || user._id,
           name: user.name || "",
           email: user.email || "",
+          role,
         };
 
         localStorage.setItem(
@@ -80,15 +86,26 @@ const OAuthSuccess = () => {
           userData
         );
 
+        console.log(
+          "OAuth user role:",
+          role
+        );
+
         window.dispatchEvent(
           new Event("authChanged")
         );
 
         timer = setTimeout(() => {
-          navigate("/Dashboard", {
-            replace: true,
-          });
-        }, 2000);
+          if (role === "admin") {
+            navigate("/admin/dashboard", {
+              replace: true,
+            });
+          } else {
+            navigate("/Dashboard", {
+              replace: true,
+            });
+          }
+        }, 1500);
       } catch (error) {
         console.error(
           "OAuth Success Error:",
@@ -117,7 +134,9 @@ const OAuthSuccess = () => {
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-          <span className="text-4xl">✅</span>
+          <span className="text-4xl">
+            ✅
+          </span>
         </div>
 
         <h1 className="mt-6 text-3xl font-bold text-green-600">
@@ -130,7 +149,7 @@ const OAuthSuccess = () => {
         </p>
 
         <p className="mt-4 text-sm text-gray-400">
-          Redirecting to Dashboard...
+          Redirecting...
         </p>
       </div>
     </div>

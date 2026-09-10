@@ -3,10 +3,6 @@ import passport from "passport";
 
 const router = express.Router();
 
-// ==========================
-// Google Login
-// ==========================
-
 router.get(
   "/google",
   passport.authenticate("google", {
@@ -14,10 +10,6 @@ router.get(
     prompt: "select_account",
   })
 );
-
-// ==========================
-// GitHub Login
-// ==========================
 
 router.get(
   "/github",

@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import AdminNavbar from "../../components/admin/AdminNavbar";
+import ConfirmModal from "../../components/common/ConfirmModal";
 import {
   getAllQuestions,
   getQuestionById,
@@ -34,6 +35,13 @@ const AdminQuestions = () => {
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [loadingQuestion, setLoadingQuestion] = useState(false);
   const [viewingQuestionId, setViewingQuestionId] = useState(null);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    question: null,
+  });
+
+  const [actionLoading, setActionLoading] = useState(false);
 
   const itemsPerPage = 7;
 
@@ -67,77 +75,36 @@ const AdminQuestions = () => {
   };
 
   const getUserName = (item) => {
-    if (item?.userId?.name) {
-      return item.userId.name;
-    }
-
-    if (item?.user?.name) {
-      return item.user.name;
-    }
-
-    if (item?.userName) {
-      return item.userName;
-    }
-
-    if (item?.name) {
-      return item.name;
-    }
+    if (item?.userId?.name) return item.userId.name;
+    if (item?.user?.name) return item.user.name;
+    if (item?.userName) return item.userName;
+    if (item?.name) return item.name;
 
     return "Unknown User";
   };
 
   const getUserEmail = (item) => {
-    if (item?.userId?.email) {
-      return item.userId.email;
-    }
-
-    if (item?.user?.email) {
-      return item.user.email;
-    }
-
-    if (item?.userEmail) {
-      return item.userEmail;
-    }
-
-    if (item?.email) {
-      return item.email;
-    }
+    if (item?.userId?.email) return item.userId.email;
+    if (item?.user?.email) return item.user.email;
+    if (item?.userEmail) return item.userEmail;
+    if (item?.email) return item.email;
 
     return "—";
   };
 
   const getTechnologyName = (item) => {
-    if (item?.technologyId?.name) {
-      return item.technologyId.name;
-    }
-
-    if (item?.technology?.name) {
-      return item.technology.name;
-    }
-
-    if (item?.technologyName) {
-      return item.technologyName;
-    }
-
-    if (typeof item?.technology === "string") {
-      return item.technology;
-    }
+    if (item?.technologyId?.name) return item.technologyId.name;
+    if (item?.technology?.name) return item.technology.name;
+    if (item?.technologyName) return item.technologyName;
+    if (typeof item?.technology === "string") return item.technology;
 
     return "General";
   };
 
   const getFolderName = (item) => {
-    if (item?.folderId?.name) {
-      return item.folderId.name;
-    }
-
-    if (item?.folder?.name) {
-      return item.folder.name;
-    }
-
-    if (item?.folderName) {
-      return item.folderName;
-    }
+    if (item?.folderId?.name) return item.folderId.name;
+    if (item?.folder?.name) return item.folder.name;
+    if (item?.folderName) return item.folderName;
 
     return "—";
   };
@@ -301,15 +268,11 @@ const AdminQuestions = () => {
       item?.created_at ||
       item?.updatedAt;
 
-    if (!rawDate) {
-      return "—";
-    }
+    if (!rawDate) return "—";
 
     const date = new Date(rawDate);
 
-    if (Number.isNaN(date.getTime())) {
-      return "—";
-    }
+    if (Number.isNaN(date.getTime())) return "—";
 
     return date.toLocaleString("en-IN", {
       day: "2-digit",
@@ -327,15 +290,11 @@ const AdminQuestions = () => {
       item?.created_at ||
       item?.updatedAt;
 
-    if (!rawDate) {
-      return null;
-    }
+    if (!rawDate) return null;
 
     const date = new Date(rawDate);
 
-    if (Number.isNaN(date.getTime())) {
-      return null;
-    }
+    if (Number.isNaN(date.getTime())) return null;
 
     return date;
   };
@@ -518,7 +477,7 @@ const AdminQuestions = () => {
 
   const handleViewQuestion = async (id) => {
     if (!id) {
-      window.alert("Question ID is not available.");
+      setError("Question ID is not available.");
       return;
     }
 
@@ -569,7 +528,7 @@ const AdminQuestions = () => {
         err
       );
 
-      window.alert(
+      setError(
         err.message ||
           "Failed to load question details."
       );
@@ -589,25 +548,43 @@ const AdminQuestions = () => {
     setLoadingQuestion(false);
   };
 
-  const handleDeleteQuestion = async (item) => {
+  const handleDeleteQuestion = (item) => {
     const id = item?._id || item?.id;
 
     if (!id) {
-      window.alert(
-        "Question ID is not available."
-      );
+      setError("Question ID is not available.");
       return;
     }
 
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this question?"
-    );
+    setConfirmModal({
+      isOpen: true,
+      question: item,
+    });
+  };
 
-    if (!confirmed) {
+  const closeConfirmModal = () => {
+    if (actionLoading) return;
+
+    setConfirmModal({
+      isOpen: false,
+      question: null,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    const item = confirmModal.question;
+    const id = item?._id || item?.id;
+
+    if (!id) {
+      setError("Question ID is not available.");
+      closeConfirmModal();
       return;
     }
 
     try {
+      setActionLoading(true);
+      setError("");
+
       await deleteQuestion(id);
 
       setQuestions((prev) =>
@@ -625,16 +602,28 @@ const AdminQuestions = () => {
           Math.max(prev - 1, 1)
         );
       }
+
+      setConfirmModal({
+        isOpen: false,
+        question: null,
+      });
     } catch (err) {
       console.error(
         "Delete Question Error:",
         err
       );
 
-      window.alert(
+      setError(
         err.message ||
           "Failed to delete question."
       );
+
+      setConfirmModal({
+        isOpen: false,
+        question: null,
+      });
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -661,15 +650,13 @@ const AdminQuestions = () => {
         </div>
 
         <div className="mb-7">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Questions
-            </h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Questions
+          </h1>
 
-            <p className="mt-1 text-sm text-slate-500 sm:text-base">
-              Manage and monitor questions asked by users.
-            </p>
-          </div>
+          <p className="mt-1 text-sm text-slate-500 sm:text-base">
+            Manage and monitor questions asked by users.
+          </p>
         </div>
 
         {error && (
@@ -677,10 +664,11 @@ const AdminQuestions = () => {
             <span>{error}</span>
 
             <button
-              onClick={fetchQuestions}
-              className="cursor-pointer font-semibold underline"
+              type="button"
+              onClick={() => setError("")}
+              className="cursor-pointer rounded-md p-1 text-red-400 transition hover:bg-red-100 hover:text-red-700"
             >
-              Retry
+              <X size={17} />
             </button>
           </div>
         )}
@@ -1296,9 +1284,7 @@ const AdminQuestions = () => {
                     </h2>
 
                     <p className="mt-0.5 text-xs text-slate-400">
-                      {getAskedAt(
-                        selectedQuestion
-                      )}
+                      {getAskedAt(selectedQuestion)}
                     </p>
                   </div>
 
@@ -1319,15 +1305,11 @@ const AdminQuestions = () => {
 
                     <div className="rounded-lg bg-slate-50 p-3">
                       <p className="font-semibold text-slate-800">
-                        {getUserName(
-                          selectedQuestion
-                        )}
+                        {getUserName(selectedQuestion)}
                       </p>
 
                       <p className="mt-1 text-sm text-slate-500">
-                        {getUserEmail(
-                          selectedQuestion
-                        )}
+                        {getUserEmail(selectedQuestion)}
                       </p>
                     </div>
                   </div>
@@ -1338,9 +1320,7 @@ const AdminQuestions = () => {
                     </p>
 
                     <span className="inline-flex rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700">
-                      {getTechnologyName(
-                        selectedQuestion
-                      )}
+                      {getTechnologyName(selectedQuestion)}
                     </span>
                   </div>
 
@@ -1351,9 +1331,7 @@ const AdminQuestions = () => {
 
                     <div className="rounded-lg border border-slate-200 bg-white p-4">
                       <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                        {getQuestionText(
-                          selectedQuestion
-                        )}
+                        {getQuestionText(selectedQuestion)}
                       </p>
                     </div>
                   </div>
@@ -1365,9 +1343,7 @@ const AdminQuestions = () => {
 
                     <div className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-4">
                       <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                        {getAnswerText(
-                          selectedQuestion
-                        ) ||
+                        {getAnswerText(selectedQuestion) ||
                           "No response available"}
                       </p>
                     </div>
@@ -1388,9 +1364,7 @@ const AdminQuestions = () => {
                             : "text-orange-600"
                         }`}
                       >
-                        {getQuestionStatus(
-                          selectedQuestion
-                        )}
+                        {getQuestionStatus(selectedQuestion)}
                       </p>
                     </div>
 
@@ -1400,9 +1374,7 @@ const AdminQuestions = () => {
                       </p>
 
                       <p className="mt-1 text-sm font-medium text-slate-700">
-                        {getResponseTime(
-                          selectedQuestion
-                        )}
+                        {getResponseTime(selectedQuestion)}
                       </p>
                     </div>
 
@@ -1412,9 +1384,7 @@ const AdminQuestions = () => {
                       </p>
 
                       <p className="mt-1 text-sm font-medium text-slate-700">
-                        {getFolderName(
-                          selectedQuestion
-                        )}
+                        {getFolderName(selectedQuestion)}
                       </p>
                     </div>
 
@@ -1424,9 +1394,7 @@ const AdminQuestions = () => {
                       </p>
 
                       <p className="mt-1 text-sm font-medium text-slate-700">
-                        {getAskedAt(
-                          selectedQuestion
-                        )}
+                        {getAskedAt(selectedQuestion)}
                       </p>
                     </div>
                   </div>
@@ -1459,6 +1427,28 @@ const AdminQuestions = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeConfirmModal}
+        onConfirm={handleConfirmDelete}
+        title="Delete Question"
+        message={`Are you sure you want to permanently delete this question? This action cannot be undone.`}
+        confirmText="Delete Question"
+        cancelText="Cancel"
+        type="danger"
+        loading={actionLoading}
+        itemName={
+          confirmModal.question
+            ? getUserName(confirmModal.question)
+            : ""
+        }
+        itemEmail={
+          confirmModal.question
+            ? getUserEmail(confirmModal.question)
+            : ""
+        }
+      />
     </div>
   );
 };

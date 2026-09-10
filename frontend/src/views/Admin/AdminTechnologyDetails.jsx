@@ -16,6 +16,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import AdminNavbar from "../../components/admin/AdminNavbar";
 import Footer from "../../components/Home/Footer";
+import ConfirmModal from "../../components/common/ConfirmModal";
 import { getTechnologyById } from "../../api/adminApi";
 
 const AdminTechnologyDetails = () => {
@@ -38,6 +39,13 @@ const AdminTechnologyDetails = () => {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        folder: null,
+    });
+
+    const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
         const fetchTechnologyDetails = async () => {
@@ -63,26 +71,26 @@ const AdminTechnologyDetails = () => {
                 setStatistics({
                     totalPdfs: Number(
                         stats.totalPdfs ??
-                        stats.pdfs ??
-                        0
+                            stats.pdfs ??
+                            0
                     ),
 
                     totalPages: Number(
                         stats.totalPages ??
-                        stats.pages ??
-                        0
+                            stats.pages ??
+                            0
                     ),
 
                     totalChunks: Number(
                         stats.totalChunks ??
-                        stats.chunks ??
-                        0
+                            stats.chunks ??
+                            0
                     ),
 
                     totalQuestions: Number(
                         stats.totalQuestions ??
-                        stats.questions ??
-                        0
+                            stats.questions ??
+                            0
                     ),
 
                     totalItems: Number(
@@ -103,7 +111,7 @@ const AdminTechnologyDetails = () => {
 
                 setError(
                     error.message ||
-                    "Failed to fetch technology details"
+                        "Failed to fetch technology details"
                 );
             } finally {
                 setLoading(false);
@@ -186,52 +194,82 @@ const AdminTechnologyDetails = () => {
     const getFolderPdfCount = (folder) => {
         if (!folder) return 0;
 
-        if (
-            Array.isArray(folder.pdfs)
-        ) {
+        if (Array.isArray(folder.pdfs)) {
             return folder.pdfs.length;
         }
 
-        if (
-            Array.isArray(folder.documents)
-        ) {
+        if (Array.isArray(folder.documents)) {
             return folder.documents.length;
         }
 
-        if (
-            Array.isArray(folder.files)
-        ) {
+        if (Array.isArray(folder.files)) {
             return folder.files.length;
         }
 
-        if (
-            Array.isArray(folder.pdfDocuments)
-        ) {
+        if (Array.isArray(folder.pdfDocuments)) {
             return folder.pdfDocuments.length;
         }
 
         return Number(
             folder.pdfCount ??
-            folder.totalPdfs ??
-            folder.pdfs ??
-            folder.documentsCount ??
-            folder.documentCount ??
-            folder.filesCount ??
-            0
+                folder.totalPdfs ??
+                folder.pdfs ??
+                folder.documentsCount ??
+                folder.documentCount ??
+                folder.filesCount ??
+                0
         );
     };
 
-    const handleDeleteFolder = async (folder) => {
-        const confirmed = window.confirm(
-            `Are you sure you want to delete ${folder.name || "this folder"
-            }?`
-        );
+    const openDeleteFolderModal = (folder) => {
+        setConfirmModal({
+            isOpen: true,
+            folder,
+        });
+    };
 
-        if (!confirmed) return;
+    const closeConfirmModal = () => {
+        if (actionLoading) {
+            return;
+        }
 
-        window.alert(
-            "Delete folder feature is not connected yet."
-        );
+        setConfirmModal({
+            isOpen: false,
+            folder: null,
+        });
+    };
+
+    const handleDeleteFolder = async () => {
+        const folder = confirmModal.folder;
+
+        if (!folder) {
+            return;
+        }
+
+        try {
+            setActionLoading(true);
+
+            setError(
+                "Delete folder feature is not connected yet."
+            );
+
+            setConfirmModal({
+                isOpen: false,
+                folder: null,
+            });
+        } catch (error) {
+            console.error(
+                "Delete Folder Error:",
+                error
+            );
+
+            setError(
+                error.message ||
+                    "Failed to delete folder"
+            );
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     const stats = [
@@ -289,7 +327,7 @@ const AdminTechnologyDetails = () => {
         );
     }
 
-    if (error || !technology) {
+    if (error && !technology) {
         return (
             <div className="min-h-screen bg-[#f8fafc] text-[#111827]">
                 <AdminNavbar />
@@ -390,6 +428,12 @@ const AdminTechnologyDetails = () => {
                     </button>
                 </div>
 
+                {error && (
+                    <div className="mb-5 rounded-xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm font-medium text-orange-700">
+                        {error}
+                    </div>
+                )}
+
                 <section className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {stats.map((stat) => {
                         const Icon = stat.icon;
@@ -477,7 +521,7 @@ const AdminTechnologyDetails = () => {
                                         <span
                                             className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(
                                                 technology.isActive !==
-                                                false
+                                                    false
                                             )}`}
                                         >
                                             {
@@ -684,7 +728,7 @@ const AdminTechnologyDetails = () => {
                                                     <td className="px-5 py-3.5 text-gray-700">
                                                         {folder.id ??
                                                             index +
-                                                            1}
+                                                                1}
                                                     </td>
 
                                                     <td className="px-4 py-3.5 font-medium text-gray-900">
@@ -733,11 +777,12 @@ const AdminTechnologyDetails = () => {
 
                                                     <td className="px-4 py-3.5 text-center">
                                                         <span
-                                                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${folder.status ===
-                                                                    "Active"
+                                                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                                                                folder.status ===
+                                                                "Active"
                                                                     ? "bg-green-100 text-green-600"
                                                                     : "bg-red-100 text-red-600"
-                                                                }`}
+                                                            }`}
                                                         >
                                                             {folder.status ||
                                                                 "Inactive"}
@@ -747,7 +792,10 @@ const AdminTechnologyDetails = () => {
                                                     <td className="px-5 py-3.5">
                                                         <div className="flex justify-center gap-2">
                                                             <ActionButton
-                                                                icon={Eye}
+                                                                icon={
+                                                                    Eye
+                                                                }
+                                                                title="View Folder"
                                                                 className="cursor-pointer bg-blue-50 text-blue-600 hover:bg-blue-100"
                                                                 onClick={() =>
                                                                     navigate(
@@ -763,7 +811,7 @@ const AdminTechnologyDetails = () => {
                                                                 title="Delete Folder"
                                                                 className="bg-red-50 text-red-500 hover:bg-red-100"
                                                                 onClick={() =>
-                                                                    handleDeleteFolder(
+                                                                    openDeleteFolderModal(
                                                                         folder
                                                                     )
                                                                 }
@@ -936,6 +984,24 @@ const AdminTechnologyDetails = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={closeConfirmModal}
+                onConfirm={handleDeleteFolder}
+                title="Delete Folder"
+                message={`Are you sure you want to permanently delete ${
+                    confirmModal.folder?.name ||
+                    "this folder"
+                }? This action cannot be undone.`}
+                confirmText="Delete Folder"
+                cancelText="Cancel"
+                type="danger"
+                loading={actionLoading}
+                itemName={
+                    confirmModal.folder?.name || ""
+                }
+            />
 
             <Footer />
         </div>

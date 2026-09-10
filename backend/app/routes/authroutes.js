@@ -3,7 +3,9 @@ import passport from "passport";
 import jwt from "jsonwebtoken";
 
 import { loginUser } from "../controllers/loginController.js";
+
 import { protect } from "../middleware/authmiddleware.js";
+
 import { registerUser } from "../controllers/authcontrollers.js";
 
 import {
@@ -20,7 +22,10 @@ router.post("/login", loginUser);
 
 router.post("/forgot-password", forgotPassword);
 
-router.post("/reset-password/:token", resetPassword);
+router.post(
+  "/reset-password/:token",
+  resetPassword
+);
 
 router.delete(
   "/delete-account",
@@ -59,11 +64,13 @@ router.get(
   (req, res) => {
     return res.status(200).json({
       success: true,
-      message: "Protected API accessed successfully",
+      message:
+        "Protected API accessed successfully",
       user: {
         id: req.user._id,
         name: req.user.name,
         email: req.user.email,
+        role: req.user.role,
       },
     });
   }

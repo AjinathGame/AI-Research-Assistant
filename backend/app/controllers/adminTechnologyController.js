@@ -90,26 +90,44 @@ export const getAllTechnologies = async (req, res) => {
       },
     });
 
-    const activeTechnologies =
-      technologies.filter(
-        (technology) =>
-          technology.isActive !== false
-      ).length;
+    const activeTechnologies = technologies.filter(
+      (technology) => technology.isActive !== false
+    ).length;
 
-    const inactiveTechnologies =
-      technologies.filter(
-        (technology) =>
-          technology.isActive === false
-      ).length;
+    const inactiveTechnologies = technologies.filter(
+      (technology) => technology.isActive === false
+    ).length;
+
+    const technologiesWithCounts = await Promise.all(
+      technologies.map(async (technology) => {
+        const usedIn = await Pdf.countDocuments({
+          technologyId: technology._id,
+        });
+
+        return {
+          ...technology,
+
+          usedIn,
+          documentCount: usedIn,
+
+          createdBy: technology.userId
+            ? {
+                name: technology.userId.name,
+                email: technology.userId.email,
+              }
+            : null,
+        };
+      })
+    );
 
     return res.status(200).json({
       success: true,
       message: "Technologies fetched successfully",
 
-      count: technologies.length,
+      count: technologiesWithCounts.length,
 
       statistics: {
-        totalTechnologies: technologies.length,
+        totalTechnologies: technologiesWithCounts.length,
         activeTechnologies,
         inactiveTechnologies,
         newThisMonth,
@@ -119,7 +137,7 @@ export const getAllTechnologies = async (req, res) => {
         totalQuestions,
       },
 
-      data: technologies,
+      data: technologiesWithCounts,
     });
   } catch (error) {
     console.error(

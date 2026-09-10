@@ -13,6 +13,7 @@ import {
 import { Link } from "react-router-dom";
 import AdminNavbar from "../../components/admin/AdminNavbar.jsx";
 import Footer from "../../components/Home/Footer";
+import ConfirmModal from "../../components/common/ConfirmModal";
 import {
     getAllTechnologies,
     deleteTechnology,
@@ -37,6 +38,13 @@ const AdminTechnologies = () => {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        technology: null,
+    });
+
+    const [actionLoading, setActionLoading] = useState(false);
 
     const fetchTechnologies = async () => {
         try {
@@ -243,14 +251,34 @@ const AdminTechnologies = () => {
         );
     };
 
-    const handleDelete = async (technology) => {
-        const confirmed = window.confirm(
-            `Are you sure you want to delete ${technology.name}?`
-        );
+    const openDeleteModal = (technology) => {
+        setConfirmModal({
+            isOpen: true,
+            technology,
+        });
+    };
 
-        if (!confirmed) return;
+    const closeConfirmModal = () => {
+        if (actionLoading) {
+            return;
+        }
+
+        setConfirmModal({
+            isOpen: false,
+            technology: null,
+        });
+    };
+
+    const handleConfirmDelete = async () => {
+        const technology = confirmModal.technology;
+
+        if (!technology?._id) {
+            return;
+        }
 
         try {
+            setActionLoading(true);
+
             await deleteTechnology(
                 technology._id
             );
@@ -287,16 +315,28 @@ const AdminTechnologies = () => {
                           )
                         : prev.inactive,
             }));
+
+            setConfirmModal({
+                isOpen: false,
+                technology: null,
+            });
         } catch (error) {
             console.error(
                 "Delete Technology Error:",
                 error
             );
 
-            window.alert(
+            setError(
                 error.message ||
                     "Failed to delete technology"
             );
+
+            setConfirmModal({
+                isOpen: false,
+                technology: null,
+            });
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -837,7 +877,7 @@ const AdminTechnologies = () => {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() =>
-                                                                        handleDelete(
+                                                                        openDeleteModal(
                                                                             technology
                                                                         )
                                                                     }
@@ -955,6 +995,24 @@ const AdminTechnologies = () => {
                     </div>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={closeConfirmModal}
+                onConfirm={handleConfirmDelete}
+                title="Delete Technology"
+                message={`Are you sure you want to permanently delete ${
+                    confirmModal.technology?.name ||
+                    "this technology"
+                }? This action cannot be undone.`}
+                confirmText="Delete Technology"
+                cancelText="Cancel"
+                type="danger"
+                loading={actionLoading}
+                itemName={
+                    confirmModal.technology?.name || ""
+                }
+            />
 
             <Footer />
         </>

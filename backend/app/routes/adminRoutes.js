@@ -2,10 +2,10 @@ import express from "express";
 
 import {
   getAdminDashboardStats,
-   getRecentActivities,
-   getUsersOverview,
-   getAdminProfile,
-updateAdminProfile,
+  getRecentActivities,
+  getUsersOverview,
+  getAdminProfile,
+  updateAdminProfile,
 } from "../controllers/adminController.js";
 
 import {
@@ -28,6 +28,7 @@ import {
   getPdfById,
   updatePdfStatus,
   deletePdf,
+  viewPdf,
 } from "../controllers/adminPdfController.js";
 
 import {
@@ -138,15 +139,68 @@ router.delete(
   deleteTechnology
 );
 
-router.get("/pdfs", protect, adminOnly, getAllPdfs);
-router.get("/pdfs/:id", protect, adminOnly, getPdfById);
-router.patch("/pdfs/:id/status", protect, adminOnly, updatePdfStatus);
-router.delete("/pdfs/:id", protect, adminOnly, deletePdf);
+router.get(
+  "/pdfs",
+  protect,
+  adminOnly,
+  getAllPdfs
+);
 
-router.get("/folders", protect, adminOnly, getAllFolders);
-router.get("/folders/:id", protect, adminOnly, getFolderById);
-router.patch("/folders/:id/status", protect, adminOnly, updateFolderStatus);
-router.delete("/folders/:id", protect, adminOnly, deleteFolder);
+router.get(
+  "/pdfs/:id/view",
+  protect,
+  adminOnly,
+  viewPdf
+);
+
+router.get(
+  "/pdfs/:id",
+  protect,
+  adminOnly,
+  getPdfById
+);
+
+router.patch(
+  "/pdfs/:id/status",
+  protect,
+  adminOnly,
+  updatePdfStatus
+);
+
+router.delete(
+  "/pdfs/:id",
+  protect,
+  adminOnly,
+  deletePdf
+);
+
+router.get(
+  "/folders",
+  protect,
+  adminOnly,
+  getAllFolders
+);
+
+router.get(
+  "/folders/:id",
+  protect,
+  adminOnly,
+  getFolderById
+);
+
+router.patch(
+  "/folders/:id/status",
+  protect,
+  adminOnly,
+  updateFolderStatus
+);
+
+router.delete(
+  "/folders/:id",
+  protect,
+  adminOnly,
+  deleteFolder
+);
 
 router.get(
   "/questions",
@@ -162,6 +216,13 @@ router.get(
   getQuestionById
 );
 
+router.delete(
+  "/questions/:id",
+  protect,
+  adminOnly,
+  deleteQuestion
+);
+
 router.get(
   "/profile",
   protect,
@@ -174,12 +235,6 @@ router.patch(
   protect,
   adminOnly,
   updateAdminProfile
-);
-router.delete(
-  "/questions/:id",
-  protect,
-  adminOnly,
-  deleteQuestion
 );
 
 router.get(

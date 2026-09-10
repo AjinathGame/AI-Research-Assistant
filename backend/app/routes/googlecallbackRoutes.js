@@ -4,34 +4,15 @@ import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
-// =====================================================
-// Google Callback
-// =====================================================
-
 router.get(
   "/google/callback",
-
   passport.authenticate("google", {
     session: false,
     failureRedirect:
       "http://localhost:5173/Login",
   }),
-
   (req, res) => {
     try {
-      const token = jwt.sign(
-        {
-          id: req.user._id,
-          email: req.user.email,
-        },
-
-        process.env.JWT_SECRET,
-
-        {
-          expiresIn: "1d",
-        }
-      );
-
       console.log(
         "Google Login Successful"
       );
@@ -41,8 +22,33 @@ router.get(
         req.user.email
       );
 
+      console.log(
+        "Google Role:",
+        req.user.role
+      );
+
+      const token = jwt.sign(
+        {
+          id: req.user._id,
+          email: req.user.email,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1d",
+        }
+      );
+
+      console.log(
+        "Google JWT generated successfully"
+      );
+
+      const role =
+        req.user.role === "admin"
+          ? "admin"
+          : "user";
+
       res.redirect(
-        `http://localhost:5173/oauth-success?token=${token}`
+        `http://localhost:5173/oauth-success?token=${token}&role=${role}`
       );
     } catch (error) {
       console.error(

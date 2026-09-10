@@ -9,6 +9,7 @@ import {
   Plus,
   X,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 
 import { getTechnologyById } from "../../api/technologyApi";
@@ -24,6 +25,8 @@ import {
   deletePdf,
 } from "../../api/pdfApi";
 
+import ConfirmModal from "../common/ConfirmModal";
+
 export default function TechnologyDetails() {
   const { technologyId } = useParams();
   const navigate = useNavigate();
@@ -36,6 +39,7 @@ export default function TechnologyDetails() {
 
   const [loading, setLoading] = useState(true);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [viewingPdfId, setViewingPdfId] = useState(null);
 
   const [error, setError] = useState("");
 
@@ -45,10 +49,17 @@ export default function TechnologyDetails() {
   const [folderDescription, setFolderDescription] = useState("");
 
   const [creating, setCreating] = useState(false);
-  const [deletingPdfId, setDeletingPdfId] = useState(null);
 
+  const [deletingPdfId, setDeletingPdfId] = useState(null);
   const [deletingFolderId, setDeletingFolderId] = useState(null);
+
   const [openFolderMenu, setOpenFolderMenu] = useState(null);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    type: null,
+    item: null,
+  });
 
   useEffect(() => {
     loadTechnology();
@@ -122,7 +133,9 @@ export default function TechnologyDetails() {
   };
 
   const createNewFolder = async () => {
-    if (!folderName.trim()) return;
+    if (!folderName.trim()) {
+      return;
+    }
 
     try {
       setCreating(true);
@@ -148,7 +161,9 @@ export default function TechnologyDetails() {
         newFolder,
       ]);
 
-      closeCreateModal();
+      setShowCreateModal(false);
+      setFolderName("");
+      setFolderDescription("");
     } catch (error) {
       console.error("Create Folder Error:", error);
 
@@ -165,16 +180,23 @@ export default function TechnologyDetails() {
       return "0 KB";
     }
 
-    const units = ["Bytes", "KB", "MB", "GB"];
+    const units = [
+      "Bytes",
+      "KB",
+      "MB",
+      "GB",
+    ];
 
     const index = Math.floor(
       Math.log(bytes) / Math.log(1024)
     );
 
-    const size = bytes / Math.pow(1024, index);
+    const size =
+      bytes / Math.pow(1024, index);
 
-    return `${size.toFixed(index === 0 ? 0 : 2)} ${units[index]
-      }`;
+    return `${size.toFixed(
+      index === 0 ? 0 : 2
+    )} ${units[index]}`;
   };
 
   const getStatusStyle = (status) => {
@@ -194,91 +216,272 @@ export default function TechnologyDetails() {
     }
   };
 
-  const handleDeleteFolder = async (folder) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${folder.name}"?`
-    );
-
-    if (!confirmed) {
+  const openDeleteFolderModal = (folder) => {
+    if (!folder?._id) {
+      setError("Folder ID is not available.");
       return;
     }
 
-    try {
-      setDeletingFolderId(folder._id);
-      setOpenFolderMenu(null);
-      setError("");
+    setOpenFolderMenu(null);
+    setError("");
 
-      await deleteFolder(folder._id);
-
-      setFolders((currentFolders) =>
-        currentFolders.filter(
-          (item) => item._id !== folder._id
-        )
-      );
-    } catch (error) {
-      console.error("Delete Folder Error:", error);
-
-      setError(
-        error.message || "Failed to delete folder"
-      );
-    } finally {
-      setDeletingFolderId(null);
-    }
+    setConfirmModal({
+      isOpen: true,
+      type: "folder",
+      item: folder,
+    });
   };
 
-  const handleViewPdf = (pdf) => {
+  const openDeletePdfModal = (pdf) => {
     if (!pdf?._id) {
       setError("PDF ID is not available.");
       return;
     }
 
-    const fileUrl = `http://localhost:5000/api/pdf/${pdf._id}/view`;
+    setError("");
 
-    window.open(fileUrl, "_blank");
+    setConfirmModal({
+      isOpen: true,
+      type: "pdf",
+      item: pdf,
+    });
   };
 
-  const handleDeletePdf = async (pdf) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${pdf.originalName || pdf.filename}"?`
-    );
+  const closeConfirmModal = () => {
+    if (
+      deletingFolderId ||
+      deletingPdfId
+    ) {
+      return;
+    }
 
-    if (!confirmed) {
+    setConfirmModal({
+      isOpen: false,
+      type: null,
+      item: null,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    const { type, item } = confirmModal;
+
+    if (!item?._id) {
+      setError(
+        type === "folder"
+          ? "Folder ID is not available."
+          : "PDF ID is not available."
+      );
+
+      setConfirmModal({
+        isOpen: false,
+        type: null,
+        item: null,
+      });
+
       return;
     }
 
     try {
-      setDeletingPdfId(pdf._id);
       setError("");
 
-      await deletePdf(pdf._id);
+      if (type === "folder") {
+        setDeletingFolderId(item._id);
 
-      setPdfs((currentPdfs) =>
-        currentPdfs.filter(
-          (item) => item._id !== pdf._id
-        )
-      );
+        await deleteFolder(item._id);
+
+        setFolders((currentFolders) =>
+          currentFolders.filter(
+            (folder) =>
+              folder._id !== item._id
+          )
+        );
+
+        if (
+          selectedFolder?._id ===
+          item._id
+        ) {
+          setSelectedFolder(null);
+          setPdfs([]);
+        }
+      }
+
+      if (type === "pdf") {
+        setDeletingPdfId(item._id);
+
+        await deletePdf(item._id);
+
+        setPdfs((currentPdfs) =>
+          currentPdfs.filter(
+            (pdf) =>
+              pdf._id !== item._id
+          )
+        );
+      }
+
+      setConfirmModal({
+        isOpen: false,
+        type: null,
+        item: null,
+      });
     } catch (error) {
-      console.error("Delete PDF Error:", error);
+      console.error(
+        `Delete ${
+          type === "folder"
+            ? "Folder"
+            : "PDF"
+        } Error:`,
+        error
+      );
 
       setError(
-        error.message || "Failed to delete PDF"
+        error.message ||
+          `Failed to delete ${
+            type === "folder"
+              ? "folder"
+              : "PDF"
+          }`
+      );
+
+      setConfirmModal({
+        isOpen: false,
+        type: null,
+        item: null,
+      });
+    } finally {
+      setDeletingFolderId(null);
+      setDeletingPdfId(null);
+    }
+  };
+
+  const handleViewPdf = async (pdf) => {
+    if (!pdf?._id) {
+      setError("PDF ID is not available.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setError(
+        "Authentication token not found. Please login again."
+      );
+      return;
+    }
+
+    const newWindow = window.open(
+      "",
+      "_blank"
+    );
+
+    if (!newWindow) {
+      setError(
+        "Unable to open PDF. Please try again."
+      );
+      return;
+    }
+
+    try {
+      setViewingPdfId(pdf._id);
+      setError("");
+
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Opening PDF...</title>
+          </head>
+          <body style="
+            margin:0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            height:100vh;
+            font-family:Arial,sans-serif;
+            background:#f8fafc;
+          ">
+            <div style="text-align:center;">
+              <div style="
+                font-size:18px;
+                font-weight:600;
+                color:#374151;
+              ">
+                Opening PDF...
+              </div>
+
+              <div style="
+                margin-top:8px;
+                font-size:14px;
+                color:#6b7280;
+              ">
+                Please wait
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+
+      const response = await fetch(
+        `http://localhost:5000/api/pdf/${pdf._id}/view`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        let message = "Failed to open PDF";
+
+        try {
+          const data = await response.json();
+          message =
+            data.message || message;
+        } catch {
+          message = "Failed to open PDF";
+        }
+
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+
+      const blobUrl =
+        URL.createObjectURL(blob);
+
+      newWindow.location.href = blobUrl;
+
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 60000);
+    } catch (error) {
+      console.error(
+        "View PDF Error:",
+        error
+      );
+
+      newWindow.close();
+
+      setError(
+        error.message ||
+          "Unable to open this PDF."
       );
     } finally {
-      setDeletingPdfId(null);
+      setViewingPdfId(null);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600"></div>
       </div>
     );
   }
 
   if (!technology) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-6">
+      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] px-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900">
             Technology Not Found
@@ -290,8 +493,11 @@ export default function TechnologyDetails() {
           </p>
 
           <button
-            onClick={() => navigate("/dashboard")}
-            className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer"
+            type="button"
+            onClick={() =>
+              navigate("/dashboard")
+            }
+            className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
           >
             <ArrowLeft size={17} />
             Back to Dashboard
@@ -303,15 +509,15 @@ export default function TechnologyDetails() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] px-6 py-8 lg:px-20">
-      <div className="max-w-7xl mx-auto">
-
+      <div className="mx-auto max-w-7xl">
         <div className="mb-8">
-
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-4 flex-wrap">
-
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-500">
             <button
-              onClick={() => navigate("/dashboard")}
-              className="hover:text-indigo-600 cursor-pointer"
+              type="button"
+              onClick={() =>
+                navigate("/dashboard")
+              }
+              className="cursor-pointer hover:text-indigo-600"
             >
               Dashboard
             </button>
@@ -335,13 +541,10 @@ export default function TechnologyDetails() {
                 </span>
               </>
             )}
-
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-
               <h1 className="text-3xl font-bold text-gray-900">
                 {selectedFolder
                   ? selectedFolder.name
@@ -352,36 +555,44 @@ export default function TechnologyDetails() {
                 {selectedFolder
                   ? "PDF documents available in this folder."
                   : technology.description ||
-                  "Manage your study materials and documents."}
+                    "Manage your study materials and documents."}
               </p>
-
             </div>
 
             {!selectedFolder && (
               <button
-                onClick={openCreateModal}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition cursor-pointer"
+                type="button"
+                onClick={
+                  openCreateModal
+                }
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 font-medium text-white transition hover:bg-indigo-700"
               >
                 <Plus size={18} />
                 Create Folder
               </button>
             )}
-
           </div>
-
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 rounded-lg px-4 py-3">
-            {error}
+          <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <span>{error}</span>
+
+            <button
+              type="button"
+              onClick={() =>
+                setError("")
+              }
+              className="cursor-pointer rounded-md p-1 hover:bg-red-100"
+            >
+              <X size={17} />
+            </button>
           </div>
         )}
 
         {!selectedFolder && (
           <div>
-
-            <div className="flex items-center justify-between mb-5">
-
+            <div className="mb-5 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">
                 Folders
               </h2>
@@ -394,12 +605,10 @@ export default function TechnologyDetails() {
                     : "folders"}
                 </span>
               )}
-
             </div>
 
             {folders.length === 0 ? (
-              <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center">
-
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
                 <Folder
                   size={50}
                   className="mx-auto text-gray-400"
@@ -414,141 +623,145 @@ export default function TechnologyDetails() {
                 </p>
 
                 <button
-                  onClick={openCreateModal}
-                  className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer"
+                  type="button"
+                  onClick={
+                    openCreateModal
+                  }
+                  className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
                 >
                   <Plus size={17} />
                   Create Folder
                 </button>
-
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {folders.map(
+                  (folder) => (
+                    <div
+                      key={folder._id}
+                      className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-yellow-100">
+                          <Folder
+                            size={30}
+                            className="text-yellow-600"
+                          />
+                        </div>
 
-                {folders.map((folder) => (
-                  <div
-                    key={folder._id}
-                    className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition"
-                  >
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenFolderMenu(
+                                openFolderMenu ===
+                                  folder._id
+                                  ? null
+                                  : folder._id
+                              )
+                            }
+                            className="cursor-pointer rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                          >
+                            <MoreVertical
+                              size={20}
+                            />
+                          </button>
 
-                    <div className="flex items-start justify-between">
-
-                      <div className="w-14 h-14 rounded-xl bg-yellow-100 flex items-center justify-center">
-                        <Folder
-                          size={30}
-                          className="text-yellow-600"
-                        />
+                          {openFolderMenu ===
+                            folder._id && (
+                            <div className="absolute right-0 top-9 z-20 w-40 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openDeleteFolderModal(
+                                    folder
+                                  )
+                                }
+                                disabled={
+                                  deletingFolderId ===
+                                  folder._id
+                                }
+                                className="w-full cursor-pointer px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {deletingFolderId ===
+                                folder._id
+                                  ? "Deleting..."
+                                  : "Delete Folder"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="relative">
+                      <h2 className="mt-6 text-xl font-semibold text-gray-900">
+                        {folder.name}
+                      </h2>
+
+                      <p className="mt-2 line-clamp-2 text-sm text-gray-500">
+                        {folder.description ||
+                          "Study materials and documents."}
+                      </p>
+
+                      <div className="mt-7 flex items-center justify-between">
+                        <span className="text-sm text-gray-400">
+                          Folder
+                        </span>
+
                         <button
+                          type="button"
                           onClick={() =>
-                            setOpenFolderMenu(
-                              openFolderMenu === folder._id
-                                ? null
-                                : folder._id
+                            openFolder(
+                              folder
                             )
                           }
-                          className="text-gray-400 hover:text-gray-700 cursor-pointer p-1 rounded-lg hover:bg-gray-100"
+                          className="cursor-pointer font-semibold text-indigo-600 hover:text-indigo-700"
                         >
-                          <MoreVertical size={20} />
+                          Open →
                         </button>
-
-                        {openFolderMenu === folder._id && (
-                          <div className="absolute right-0 top-9 z-20 w-40 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                            <button
-                              onClick={() =>
-                                handleDeleteFolder(folder)
-                              }
-                              disabled={
-                                deletingFolderId === folder._id
-                              }
-                              className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 cursor-pointer disabled:opacity-50"
-                            >
-                              {deletingFolderId === folder._id
-                                ? "Deleting..."
-                                : "Delete Folder"}
-                            </button>
-                          </div>
-                        )}
                       </div>
-
                     </div>
-
-                    <h2 className="mt-6 text-xl font-semibold text-gray-900">
-                      {folder.name}
-                    </h2>
-
-                    <p className="mt-2 text-sm text-gray-500 line-clamp-2">
-                      {folder.description ||
-                        "Study materials and documents."}
-                    </p>
-
-                    <div className="flex items-center justify-between mt-7">
-
-                      <span className="text-sm text-gray-400">
-                        Folder
-                      </span>
-
-                      <button
-                        onClick={() => openFolder(folder)}
-                        className="text-indigo-600 font-semibold hover:text-indigo-700 cursor-pointer"
-                      >
-                        Open →
-                      </button>
-
-                    </div>
-
-                  </div>
-                ))}
-
+                  )
+                )}
               </div>
             )}
-
           </div>
         )}
 
         {selectedFolder && (
           <div>
-
             <button
+              type="button"
               onClick={goBack}
-              className="flex items-center gap-2 mb-6 text-indigo-600 font-medium hover:text-indigo-700 cursor-pointer"
+              className="mb-6 flex cursor-pointer items-center gap-2 font-medium text-indigo-600 hover:text-indigo-700"
             >
               <ArrowLeft size={18} />
               Back to Folders
             </button>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-
                 <h2 className="text-xl font-semibold text-gray-900">
                   PDF Documents
                 </h2>
 
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="mt-1 text-sm text-gray-500">
                   {pdfLoading
                     ? "Loading documents..."
-                    : `${pdfs.length} ${pdfs.length === 1
-                      ? "document"
-                      : "documents"
-                    } available`}
+                    : `${pdfs.length} ${
+                        pdfs.length === 1
+                          ? "document"
+                          : "documents"
+                      } available`}
                 </p>
-
               </div>
-
             </div>
 
             {pdfLoading ? (
-              <div className="bg-white border border-gray-200 rounded-2xl py-16 flex justify-center">
-
-                <div className="w-9 h-9 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-
+              <div className="flex justify-center rounded-2xl border border-gray-200 bg-white py-16">
+                <div className="h-9 w-9 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600"></div>
               </div>
             ) : pdfs.length === 0 ? (
-              <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center">
-
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
                 <FileText
                   size={50}
                   className="mx-auto text-gray-400"
@@ -561,130 +774,156 @@ export default function TechnologyDetails() {
                 <p className="mt-2 text-sm text-gray-500">
                   No PDFs have been uploaded to this folder yet.
                 </p>
-
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-
-                {pdfs.map((pdf, index) => (
-                  <div
-                    key={pdf._id}
-                    className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 hover:bg-gray-50 transition ${index !== pdfs.length - 1
-                      ? "border-b border-gray-100"
-                      : ""
+              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                {pdfs.map(
+                  (pdf, index) => (
+                    <div
+                      key={pdf._id}
+                      className={`flex flex-col gap-4 p-5 transition hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between ${
+                        index !==
+                        pdfs.length - 1
+                          ? "border-b border-gray-100"
+                          : ""
                       }`}
-                  >
-
-                    <div className="flex items-center gap-4 min-w-0">
-
-                      <div className="w-11 h-11 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-
-                        <FileText
-                          size={22}
-                          className="text-red-600"
-                        />
-
-                      </div>
-
-                      <div className="min-w-0">
-
-                        <h3 className="font-medium text-gray-900 truncate">
-                          {pdf.originalName ||
-                            pdf.filename}
-                        </h3>
-
-                        <div className="flex items-center gap-3 mt-1 flex-wrap">
-
-                          <span className="text-sm text-gray-500">
-                            {formatFileSize(
-                              pdf.fileSize
-                            )}
-                          </span>
-
-                          <span className="text-gray-300">
-                            •
-                          </span>
-
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${getStatusStyle(
-                              pdf.status
-                            )}`}
-                          >
-                            {pdf.status ||
-                              "uploaded"}
-                          </span>
-
+                    >
+                      <div className="flex min-w-0 items-center gap-4">
+                        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-red-100">
+                          <FileText
+                            size={22}
+                            className="text-red-600"
+                          />
                         </div>
 
+                        <div className="min-w-0">
+                          <h3 className="truncate font-medium text-gray-900">
+                            {pdf.originalName ||
+                              pdf.filename}
+                          </h3>
+
+                          <div className="mt-1 flex flex-wrap items-center gap-3">
+                            <span className="text-sm text-gray-500">
+                              {formatFileSize(
+                                pdf.fileSize
+                              )}
+                            </span>
+
+                            <span className="text-gray-300">
+                              •
+                            </span>
+
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${getStatusStyle(
+                                pdf.status
+                              )}`}
+                            >
+                              {pdf.status ||
+                                "uploaded"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
+                      <div className="flex flex-shrink-0 items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleViewPdf(
+                              pdf
+                            )
+                          }
+                          disabled={
+                            viewingPdfId ===
+                            pdf._id
+                          }
+                          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-indigo-200 px-4 py-2 font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {viewingPdfId ===
+                          pdf._id ? (
+                            <>
+                              <Loader2
+                                size={16}
+                                className="animate-spin"
+                              />
+                              Opening...
+                            </>
+                          ) : (
+                            <>
+                              <ExternalLink
+                                size={16}
+                              />
+                              View
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openDeletePdfModal(
+                              pdf
+                            )
+                          }
+                          disabled={
+                            deletingPdfId ===
+                            pdf._id
+                          }
+                          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-red-200 px-4 py-2 font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {deletingPdfId ===
+                          pdf._id ? (
+                            <>
+                              <Loader2
+                                size={16}
+                                className="animate-spin"
+                              />
+                              Deleting...
+                            </>
+                          ) : (
+                            "Delete"
+                          )}
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <button
-                        onClick={() => handleViewPdf(pdf)}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 text-indigo-600 border border-indigo-200 rounded-lg font-medium hover:bg-indigo-50 transition cursor-pointer"
-                      >
-                        <ExternalLink size={16} />
-                        View
-                      </button>
-                      <button
-                        onClick={() => handleDeletePdf(pdf)}
-                        disabled={deletingPdfId === pdf._id}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-50 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {deletingPdfId === pdf._id
-                          ? "Deleting..."
-                          : "Delete"}
-                      </button>
-
-                    </div>
-                  </div>
-                ))}
-
+                  )
+                )}
               </div>
             )}
-
           </div>
         )}
-
       </div>
 
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
-
-            <div className="flex items-center justify-between mb-5">
-
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-5 flex items-center justify-between">
               <div>
-
                 <h2 className="text-xl font-bold text-gray-900">
                   Create New Folder
                 </h2>
 
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="mt-1 text-sm text-gray-500">
                   Create a folder inside{" "}
                   {technology.name}.
                 </p>
-
               </div>
 
               <button
-                onClick={closeCreateModal}
+                type="button"
+                onClick={
+                  closeCreateModal
+                }
                 disabled={creating}
-                className="text-gray-400 hover:text-gray-700 cursor-pointer disabled:opacity-50"
+                className="cursor-pointer text-gray-400 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X size={22} />
               </button>
-
             </div>
 
             <div className="space-y-4">
-
               <div>
-
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
                   Folder Name
                 </label>
 
@@ -692,22 +931,25 @@ export default function TechnologyDetails() {
                   type="text"
                   value={folderName}
                   onChange={(e) =>
-                    setFolderName(e.target.value)
+                    setFolderName(
+                      e.target.value
+                    )
                   }
                   placeholder="Enter folder name"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  disabled={creating}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
                 />
-
               </div>
 
               <div>
-
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
                   Description
                 </label>
 
                 <textarea
-                  value={folderDescription}
+                  value={
+                    folderDescription
+                  }
                   onChange={(e) =>
                     setFolderDescription(
                       e.target.value
@@ -715,42 +957,99 @@ export default function TechnologyDetails() {
                   }
                   placeholder="Enter folder description"
                   rows={3}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  disabled={creating}
+                  className="w-full resize-none rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
                 />
-
               </div>
-
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
-
+            <div className="mt-6 flex justify-end gap-3">
               <button
-                onClick={closeCreateModal}
+                type="button"
+                onClick={
+                  closeCreateModal
+                }
                 disabled={creating}
-                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 cursor-pointer disabled:opacity-50"
+                className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2.5 font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
 
               <button
-                onClick={createNewFolder}
-                disabled={
-                  !folderName.trim() || creating
+                type="button"
+                onClick={
+                  createNewFolder
                 }
-                className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                disabled={
+                  !folderName.trim() ||
+                  creating
+                }
+                className="cursor-pointer rounded-lg bg-indigo-600 px-5 py-2.5 font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {creating
                   ? "Creating..."
                   : "Create"}
               </button>
-
             </div>
-
           </div>
-
         </div>
       )}
 
+      <ConfirmModal
+        isOpen={
+          confirmModal.isOpen
+        }
+        onClose={
+          closeConfirmModal
+        }
+        onConfirm={
+          handleConfirmDelete
+        }
+        title={
+          confirmModal.type ===
+          "folder"
+            ? "Delete Folder"
+            : "Delete PDF"
+        }
+        message={
+          confirmModal.type ===
+          "folder"
+            ? `Are you sure you want to permanently delete "${
+                confirmModal.item?.name ||
+                "this folder"
+              }"? This action cannot be undone.`
+            : `Are you sure you want to permanently delete "${
+                confirmModal.item
+                  ?.originalName ||
+                confirmModal.item
+                  ?.filename ||
+                "this PDF"
+              }"? This action cannot be undone.`
+        }
+        confirmText={
+          confirmModal.type ===
+          "folder"
+            ? "Delete Folder"
+            : "Delete PDF"
+        }
+        cancelText="Cancel"
+        type="danger"
+        loading={
+          deletingFolderId !== null ||
+          deletingPdfId !== null
+        }
+        itemName={
+          confirmModal.type ===
+          "folder"
+            ? confirmModal.item
+                ?.name || ""
+            : confirmModal.item
+                ?.originalName ||
+              confirmModal.item
+                ?.filename ||
+              ""
+        }
+      />
     </div>
   );
 }

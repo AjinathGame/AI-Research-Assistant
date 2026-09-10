@@ -15,7 +15,13 @@ import {
 
 import AdminNavbar from "../../components/admin/AdminNavbar";
 import Footer from "../../components/Home/Footer";
-import { getAllPdfs, deletePdf } from "../../api/adminApi";
+import ConfirmModal from "../../components/common/ConfirmModal";
+
+import {
+  getAllPdfs,
+  deletePdf,
+  viewAdminPdf,
+} from "../../api/adminApi";
 
 const ITEMS_PER_PAGE = 8;
 
@@ -39,6 +45,14 @@ const AdminDocuments = () => {
   const [error, setError] = useState("");
 
   const [deletingId, setDeletingId] = useState(null);
+  const [viewingId, setViewingId] = useState(null);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    document: null,
+  });
+
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchDocuments = async () => {
     try {
@@ -352,145 +366,138 @@ const AdminDocuments = () => {
     return "bg-slate-100 text-slate-600";
   };
 
-  const getFileUrl = (filePath) => {
-    if (!filePath) {
-      return null;
-    }
-
-    if (
-      filePath.startsWith("http://") ||
-      filePath.startsWith("https://")
-    ) {
-      return filePath;
-    }
-
-    const normalizedPath = filePath.replace(
-      /\\/g,
-      "/"
-    );
-
-    const storageIndex =
-      normalizedPath.indexOf("/storage/");
-
-    if (storageIndex !== -1) {
-      const relativePath =
-        normalizedPath.substring(
-          storageIndex + "/storage/".length
-        );
-
-      return `http://localhost:5000/storage/${relativePath}`;
-    }
-
-    const uploadsIndex =
-      normalizedPath.indexOf("/uploads/");
-
-    if (uploadsIndex !== -1) {
-      const relativePath =
-        normalizedPath.substring(
-          uploadsIndex + "/uploads/".length
-        );
-
-      return `http://localhost:5000/uploads/${relativePath}`;
-    }
-
-    if (
-      normalizedPath.startsWith("storage/")
-    ) {
-      return `http://localhost:5000/${normalizedPath}`;
-    }
-
-    if (
-      normalizedPath.startsWith("uploads/")
-    ) {
-      return `http://localhost:5000/${normalizedPath}`;
-    }
-
-    return null;
-  };
-
-  const handleView = (pdf) => {
-    if (!pdf?.filePath) {
-      window.alert(
-        "Document file is not available."
-      );
+  const handleView = async (pdf) => {
+    if (!pdf?._id) {
+      window.alert("Document is not available.");
       return;
     }
 
-    const fileUrl = getFileUrl(
-      pdf.filePath
-    );
+    try {
+      setViewingId(pdf._id);
 
-    if (!fileUrl) {
-      window.alert(
-        "Unable to open this document."
+      const blob = await viewAdminPdf(pdf._id);
+
+      const blobUrl = URL.createObjectURL(blob);
+
+      const newWindow = window.open(
+        blobUrl,
+        "_blank",
+        "noopener,noreferrer"
       );
-      return;
-    }
 
-    window.open(
-      fileUrl,
-      "_blank",
-      "noopener,noreferrer"
-    );
+      if (!newWindow) {
+        URL.revokeObjectURL(blobUrl);
+
+        window.alert(
+          "Please allow pop-ups in your browser to open the PDF."
+        );
+
+        return;
+      }
+
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 60000);
+    } catch (error) {
+      console.error(
+        "Admin View PDF Error:",
+        error
+      );
+
+      window.alert(
+        error.message ||
+          "Unable to open this PDF."
+      );
+    } finally {
+      setViewingId(null);
+    }
   };
 
-  const handleDownload = (pdf) => {
-    if (!pdf?.filePath) {
+  const handleDownload = async (pdf) => {
+    if (!pdf?._id) {
       window.alert(
         "PDF file is not available."
       );
       return;
     }
 
-    const fileUrl = getFileUrl(
-      pdf.filePath
-    );
+    try {
+      setViewingId(pdf._id);
 
-    if (!fileUrl) {
-      window.alert(
-        "Unable to download this document."
+      const blob = await viewAdminPdf(pdf._id);
+
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link =
+        document.createElement("a");
+
+      link.href = blobUrl;
+      link.download =
+        pdf.originalName ||
+        pdf.filename ||
+        "document.pdf";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 1000);
+    } catch (error) {
+      console.error(
+        "Admin Download PDF Error:",
+        error
       );
-      return;
+
+      window.alert(
+        error.message ||
+          "Unable to download this document."
+      );
+    } finally {
+      setViewingId(null);
     }
-
-    const link =
-      document.createElement("a");
-
-    link.href = fileUrl;
-    link.download =
-      pdf.originalName ||
-      pdf.filename ||
-      "document.pdf";
-
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
-  const handleDelete = async (id) => {
-    if (!id || deletingId) {
+  const openDeleteModal = (pdf) => {
+    if (!pdf?._id || deletingId || viewingId) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this document?"
-    );
+    setConfirmModal({
+      isOpen: true,
+      document: pdf,
+    });
+  };
 
-    if (!confirmed) {
+  const closeConfirmModal = () => {
+    if (actionLoading) {
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: false,
+      document: null,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    const pdf = confirmModal.document;
+
+    if (!pdf?._id || actionLoading) {
       return;
     }
 
     try {
-      setDeletingId(id);
+      setActionLoading(true);
+      setDeletingId(pdf._id);
 
-      await deletePdf(id);
+      await deletePdf(pdf._id);
 
       setDocuments((previousDocuments) =>
         previousDocuments.filter(
-          (pdf) => pdf._id !== id
+          (document) =>
+            document._id !== pdf._id
         )
       );
 
@@ -501,18 +508,29 @@ const AdminDocuments = () => {
           previousStatistics.totalDocuments - 1
         ),
       }));
+
+      setConfirmModal({
+        isOpen: false,
+        document: null,
+      });
     } catch (error) {
       console.error(
         "Delete PDF Error:",
         error
       );
 
-      window.alert(
+      setError(
         error.message ||
           "Failed to delete document."
       );
+
+      setConfirmModal({
+        isOpen: false,
+        document: null,
+      });
     } finally {
       setDeletingId(null);
+      setActionLoading(false);
     }
   };
 
@@ -888,6 +906,9 @@ const AdminDocuments = () => {
                       const documentStatus =
                         getDocumentStatus(pdf);
 
+                      const isViewing =
+                        viewingId === pdf._id;
+
                       return (
                         <tr
                           key={pdf._id}
@@ -981,11 +1002,16 @@ const AdminDocuments = () => {
                                 }
                                 disabled={
                                   deletingId ===
-                                  pdf._id
+                                    pdf._id ||
+                                  isViewing
                                 }
                                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                <Eye className="h-4 w-4" />
+                                {isViewing ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
                               </button>
 
                               <button
@@ -996,7 +1022,8 @@ const AdminDocuments = () => {
                                 }
                                 disabled={
                                   deletingId ===
-                                  pdf._id
+                                    pdf._id ||
+                                  isViewing
                                 }
                                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-purple-50 text-purple-600 transition hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
                               >
@@ -1007,13 +1034,12 @@ const AdminDocuments = () => {
                                 type="button"
                                 title="Delete document"
                                 onClick={() =>
-                                  handleDelete(
-                                    pdf._id
-                                  )
+                                  openDeleteModal(pdf)
                                 }
                                 disabled={
                                   deletingId ===
-                                  pdf._id
+                                    pdf._id ||
+                                  isViewing
                                 }
                                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-red-50 text-red-500 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                               >
@@ -1070,6 +1096,9 @@ const AdminDocuments = () => {
 
                   const documentStatus =
                     getDocumentStatus(pdf);
+
+                  const isViewing =
+                    viewingId === pdf._id;
 
                   return (
                     <article
@@ -1161,11 +1190,17 @@ const AdminDocuments = () => {
                           }
                           disabled={
                             deletingId ===
-                            pdf._id
+                              pdf._id ||
+                            isViewing
                           }
                           className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-50 py-2.5 text-sm font-medium text-blue-600 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          <Eye className="h-4 w-4" />
+                          {isViewing ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+
                           View
                         </button>
 
@@ -1176,7 +1211,8 @@ const AdminDocuments = () => {
                           }
                           disabled={
                             deletingId ===
-                            pdf._id
+                              pdf._id ||
+                            isViewing
                           }
                           className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-purple-50 py-2.5 text-sm font-medium text-purple-600 transition hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
@@ -1187,13 +1223,12 @@ const AdminDocuments = () => {
                         <button
                           type="button"
                           onClick={() =>
-                            handleDelete(
-                              pdf._id
-                            )
+                            openDeleteModal(pdf)
                           }
                           disabled={
                             deletingId ===
-                            pdf._id
+                              pdf._id ||
+                            isViewing
                           }
                           className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
@@ -1287,6 +1322,28 @@ const AdminDocuments = () => {
           </section>
         </div>
       </main>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeConfirmModal}
+        onConfirm={handleConfirmDelete}
+        title="Delete Document"
+        message={`Are you sure you want to permanently delete ${
+          confirmModal.document
+            ? getDocumentName(confirmModal.document)
+            : "this document"
+        }? This action cannot be undone.`}
+        confirmText="Delete Document"
+        cancelText="Cancel"
+        type="danger"
+        loading={actionLoading}
+        itemName={
+          confirmModal.document
+            ? getDocumentName(confirmModal.document)
+            : ""
+        }
+        itemEmail=""
+      />
 
       <Footer />
     </div>

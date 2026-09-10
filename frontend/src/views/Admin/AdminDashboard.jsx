@@ -15,8 +15,10 @@ import {
   UserCheck,
   Clock,
 } from "lucide-react";
+
 import AdminNavbar from "../../components/admin/AdminNavbar";
 import Footer from "../../components/Home/Footer";
+
 import {
   getAdminDashboardStats,
   getRecentActivities,
@@ -34,15 +36,23 @@ const AdminDashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedPeriod, setSelectedPeriod] = useState("month");
-  const [showPeriodMenu, setShowPeriodMenu] = useState(false);
-  const [activity, setActivity] = useState([]);
-  const [showAllActivity, setShowAllActivity] = useState(false);
 
-  const [usersOverview, setUsersOverview] = useState({
-    newUsers: [],
-    activeUsers: [],
-  });
+  const [selectedPeriod, setSelectedPeriod] =
+    useState("month");
+
+  const [showPeriodMenu, setShowPeriodMenu] =
+    useState(false);
+
+  const [activity, setActivity] = useState([]);
+
+  const [showAllActivity, setShowAllActivity] =
+    useState(false);
+
+  const [usersOverview, setUsersOverview] =
+    useState({
+      newUsers: [],
+      activeUsers: [],
+    });
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -50,11 +60,13 @@ const AdminDashboard = () => {
         setLoading(true);
         setError("");
 
-        const [statsResponse, activityResponse] =
-          await Promise.all([
-            getAdminDashboardStats(),
-            getRecentActivities(),
-          ]);
+        const [
+          statsResponse,
+          activityResponse,
+        ] = await Promise.all([
+          getAdminDashboardStats(),
+          getRecentActivities(),
+        ]);
 
         if (statsResponse.success) {
           setDashboardData(
@@ -69,10 +81,19 @@ const AdminDashboard = () => {
         }
 
         if (activityResponse.success) {
-          setActivity(activityResponse.data || []);
+          setActivity(
+            Array.isArray(
+              activityResponse.data
+            )
+              ? activityResponse.data
+              : []
+          );
         }
       } catch (error) {
-        console.error("Admin Dashboard Error:", error);
+        console.error(
+          "Admin Dashboard Error:",
+          error
+        );
 
         setError(
           error.message ||
@@ -89,9 +110,10 @@ const AdminDashboard = () => {
   useEffect(() => {
     const loadUsersOverview = async () => {
       try {
-        const response = await getUsersOverview(
-          selectedPeriod
-        );
+        const response =
+          await getUsersOverview(
+            selectedPeriod
+          );
 
         if (response.success) {
           setUsersOverview(
@@ -135,7 +157,8 @@ const AdminDashboard = () => {
       value: loading
         ? "..."
         : Number(
-            dashboardData.totalTechnologies || 0
+            dashboardData.totalTechnologies ||
+              0
           ).toLocaleString(),
       text: "2 new this week",
       icon: Layers3,
@@ -159,7 +182,8 @@ const AdminDashboard = () => {
       value: loading
         ? "..."
         : Number(
-            dashboardData.totalQuestions || 0
+            dashboardData.totalQuestions ||
+              0
           ).toLocaleString(),
       text: "320 this week",
       icon: CircleHelp,
@@ -215,14 +239,19 @@ const AdminDashboard = () => {
   const chartWidth = 760;
   const chartHeight = 330;
 
-  const getPoint = (value, index, data) => {
+  const getPoint = (
+    value,
+    index,
+    data
+  ) => {
     const denominator = Math.max(
       data.length - 1,
       1
     );
 
     const x =
-      (index / denominator) * chartWidth;
+      (index / denominator) *
+      chartWidth;
 
     const y =
       chartHeight -
@@ -266,21 +295,28 @@ const AdminDashboard = () => {
   const getChartLabels = () => {
     const now = new Date();
 
-    if (selectedPeriod === "3months") {
+    if (
+      selectedPeriod === "3months"
+    ) {
       const labels = [];
 
-      for (let i = 0; i < 3; i++) {
+      for (
+        let i = 0;
+        i < 3;
+        i++
+      ) {
         const date = new Date(
           now.getFullYear(),
           now.getMonth() - 2 + i,
           1
         );
 
-        const daysInMonth = new Date(
-          date.getFullYear(),
-          date.getMonth() + 1,
-          0
-        ).getDate();
+        const daysInMonth =
+          new Date(
+            date.getFullYear(),
+            date.getMonth() + 1,
+            0
+          ).getDate();
 
         const labelIndexes = [
           0,
@@ -290,32 +326,41 @@ const AdminDashboard = () => {
           daysInMonth - 1,
         ];
 
-        labelIndexes.forEach((index) => {
-          const labelDate = new Date(
-            date.getFullYear(),
-            date.getMonth(),
-            index + 1
-          );
+        labelIndexes.forEach(
+          (index) => {
+            const labelDate =
+              new Date(
+                date.getFullYear(),
+                date.getMonth(),
+                index + 1
+              );
 
-          labels.push(
-            labelDate.toLocaleDateString(
-              "en-US",
-              {
-                month: "short",
-                day: "numeric",
-              }
-            )
-          );
-        });
+            labels.push(
+              labelDate.toLocaleDateString(
+                "en-US",
+                {
+                  month: "short",
+                  day: "numeric",
+                }
+              )
+            );
+          }
+        );
       }
 
       return labels;
     }
 
-    let year = now.getFullYear();
-    let month = now.getMonth();
+    let year =
+      now.getFullYear();
 
-    if (selectedPeriod === "lastMonth") {
+    let month =
+      now.getMonth();
+
+    if (
+      selectedPeriod ===
+      "lastMonth"
+    ) {
       month--;
 
       if (month < 0) {
@@ -324,11 +369,12 @@ const AdminDashboard = () => {
       }
     }
 
-    const daysInMonth = new Date(
-      year,
-      month + 1,
-      0
-    ).getDate();
+    const daysInMonth =
+      new Date(
+        year,
+        month + 1,
+        0
+      ).getDate();
 
     const labelIndexes = [
       0,
@@ -340,32 +386,43 @@ const AdminDashboard = () => {
       daysInMonth - 1,
     ];
 
-    return labelIndexes.map((index) => {
-      const date = new Date(
-        year,
-        month,
-        index + 1
-      );
+    return labelIndexes.map(
+      (index) => {
+        const date = new Date(
+          year,
+          month,
+          index + 1
+        );
 
-      return date.toLocaleDateString(
-        "en-US",
-        {
-          month: "short",
-          day: "numeric",
-        }
-      );
-    });
+        return date.toLocaleDateString(
+          "en-US",
+          {
+            month: "short",
+            day: "numeric",
+          }
+        );
+      }
+    );
   };
 
-  const chartLabels = getChartLabels();
+  const chartLabels =
+    getChartLabels();
 
-  const getActivityIcon = (type) => {
-    const normalizedType = String(type || "")
-      .toLowerCase()
-      .replace(/[-\s]/g, "_");
+  const getActivityIcon = (
+    type
+  ) => {
+    const normalizedType =
+      String(type || "")
+        .toLowerCase()
+        .replace(
+          /[-\s]/g,
+          "_"
+        );
 
     if (
-      normalizedType.includes("login")
+      normalizedType.includes(
+        "login"
+      )
     ) {
       return {
         icon: LogIn,
@@ -375,9 +432,15 @@ const AdminDashboard = () => {
     }
 
     if (
-      normalizedType.includes("register") ||
-      normalizedType.includes("signup") ||
-      normalizedType.includes("user_created")
+      normalizedType.includes(
+        "register"
+      ) ||
+      normalizedType.includes(
+        "signup"
+      ) ||
+      normalizedType.includes(
+        "user_created"
+      )
     ) {
       return {
         icon: UserPlus,
@@ -387,9 +450,15 @@ const AdminDashboard = () => {
     }
 
     if (
-      normalizedType.includes("pdf") ||
-      normalizedType.includes("upload") ||
-      normalizedType.includes("document")
+      normalizedType.includes(
+        "pdf"
+      ) ||
+      normalizedType.includes(
+        "upload"
+      ) ||
+      normalizedType.includes(
+        "document"
+      )
     ) {
       return {
         icon: FilePlus2,
@@ -399,8 +468,12 @@ const AdminDashboard = () => {
     }
 
     if (
-      normalizedType.includes("question") ||
-      normalizedType.includes("ask")
+      normalizedType.includes(
+        "question"
+      ) ||
+      normalizedType.includes(
+        "ask"
+      )
     ) {
       return {
         icon: HelpCircle,
@@ -410,7 +483,9 @@ const AdminDashboard = () => {
     }
 
     if (
-      normalizedType.includes("technology")
+      normalizedType.includes(
+        "technology"
+      )
     ) {
       return {
         icon: Layers,
@@ -420,8 +495,12 @@ const AdminDashboard = () => {
     }
 
     if (
-      normalizedType.includes("delete") ||
-      normalizedType.includes("remove")
+      normalizedType.includes(
+        "delete"
+      ) ||
+      normalizedType.includes(
+        "remove"
+      )
     ) {
       return {
         icon: Trash2,
@@ -431,7 +510,9 @@ const AdminDashboard = () => {
     }
 
     if (
-      normalizedType.includes("active")
+      normalizedType.includes(
+        "active"
+      )
     ) {
       return {
         icon: UserCheck,
@@ -447,9 +528,13 @@ const AdminDashboard = () => {
     };
   };
 
-  const getActivityData = (item) => {
+  const getActivityData = (
+    item
+  ) => {
     const fallback =
-      getActivityIcon(item?.type);
+      getActivityIcon(
+        item?.type
+      );
 
     return {
       ...item,
@@ -464,7 +549,19 @@ const AdminDashboard = () => {
   };
 
   const displayedActivities =
-    activity.map(getActivityData);
+    activity.map(
+      getActivityData
+    );
+
+  const dashboardActivities =
+    displayedActivities.slice(
+      0,
+      5
+    );
+
+  const closeActivityModal = () => {
+    setShowAllActivity(false);
+  };
 
   return (
     <>
@@ -480,7 +577,8 @@ const AdminDashboard = () => {
               </h1>
 
               <p className="mt-2 text-[16px] text-gray-500">
-                Welcome back, Admin! Here's what's happening.
+                Welcome back, Admin!
+                Here's what's happening.
               </p>
             </div>
 
@@ -493,48 +591,63 @@ const AdminDashboard = () => {
             )}
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-              {stats.map((stat) => {
-                const Icon = stat.icon;
+              {stats.map(
+                (stat) => {
+                  const Icon =
+                    stat.icon;
 
-                return (
-                  <div
-                    key={stat.title}
-                    className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-[0_2px_8px_rgba(15,23,42,0.04)]"
-                  >
-                    <div className="flex items-start gap-5">
-                      <div
-                        className={`flex h-[60px] w-[74px] shrink-0 items-center justify-center rounded-xl ${stat.iconBg}`}
-                      >
-                        <Icon
-                          size={38}
-                          strokeWidth={1.8}
-                          className={stat.iconColor}
-                        />
+                  return (
+                    <div
+                      key={
+                        stat.title
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-[0_2px_8px_rgba(15,23,42,0.04)]"
+                    >
+                      <div className="flex items-start gap-5">
+                        <div
+                          className={`flex h-[60px] w-[74px] shrink-0 items-center justify-center rounded-xl ${stat.iconBg}`}
+                        >
+                          <Icon
+                            size={38}
+                            strokeWidth={
+                              1.8
+                            }
+                            className={
+                              stat.iconColor
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <p className="text-[16px] font-medium text-[#263650]">
+                            {
+                              stat.title
+                            }
+                          </p>
+
+                          <h2 className="mt-2 text-[31px] font-bold leading-none text-[#111827]">
+                            {
+                              stat.value
+                            }
+                          </h2>
+                        </div>
                       </div>
 
-                      <div>
-                        <p className="text-[16px] font-medium text-[#263650]">
-                          {stat.title}
-                        </p>
+                      <div className="mt-6 flex items-center gap-2">
+                        <span className="text-[25px] leading-none text-emerald-500">
+                          ↑
+                        </span>
 
-                        <h2 className="mt-2 text-[31px] font-bold leading-none text-[#111827]">
-                          {stat.value}
-                        </h2>
+                        <span className="text-[15px] text-[#40516b]">
+                          {
+                            stat.text
+                          }
+                        </span>
                       </div>
                     </div>
-
-                    <div className="mt-6 flex items-center gap-2">
-                      <span className="text-[25px] leading-none text-emerald-500">
-                        ↑
-                      </span>
-
-                      <span className="text-[15px] text-[#40516b]">
-                        {stat.text}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                }
+              )}
             </div>
 
             <div className="mt-7 grid grid-cols-1 gap-6 xl:grid-cols-[1.55fr_1fr]">
@@ -649,28 +762,35 @@ const AdminDashboard = () => {
 
                       <div className="flex w-[45px] shrink-0 flex-col justify-between pb-[42px] pt-[12px] text-xs text-gray-500">
                         <span>
-                          {chartMax}
+                          {
+                            chartMax
+                          }
                         </span>
 
                         <span>
                           {Math.round(
-                            chartMax * 0.75
+                            chartMax *
+                              0.75
                           )}
                         </span>
 
                         <span>
                           {Math.round(
-                            chartMax * 0.5
+                            chartMax *
+                              0.5
                           )}
                         </span>
 
                         <span>
                           {Math.round(
-                            chartMax * 0.25
+                            chartMax *
+                              0.25
                           )}
                         </span>
 
-                        <span>0</span>
+                        <span>
+                          0
+                        </span>
                       </div>
 
                       <div className="relative flex-1">
@@ -678,7 +798,9 @@ const AdminDashboard = () => {
                         <div className="absolute bottom-[42px] left-0 right-0 top-[12px]">
 
                           {[0, 1, 2, 3, 4].map(
-                            (line) => (
+                            (
+                              line
+                            ) => (
                               <div
                                 key={`horizontal-${line}`}
                                 className="absolute left-0 right-0 border-t border-dashed border-gray-200"
@@ -690,7 +812,9 @@ const AdminDashboard = () => {
                           )}
 
                           {[0, 1, 2, 3, 4, 5, 6].map(
-                            (line) => (
+                            (
+                              line
+                            ) => (
                               <div
                                 key={`vertical-${line}`}
                                 className="absolute bottom-0 top-0 border-l border-dashed border-gray-200"
@@ -701,8 +825,10 @@ const AdminDashboard = () => {
                             )
                           )}
 
-                          {newUsers.length > 0 ||
-                          activeUsers.length > 0 ? (
+                          {newUsers.length >
+                            0 ||
+                          activeUsers.length >
+                            0 ? (
                             <svg
                               viewBox={`0 0 ${chartWidth} ${chartHeight}`}
                               className="absolute inset-0 h-full w-full overflow-visible"
@@ -753,8 +879,12 @@ const AdminDashboard = () => {
                                   return (
                                     <circle
                                       key={`new-${index}`}
-                                      cx={point.x}
-                                      cy={point.y}
+                                      cx={
+                                        point.x
+                                      }
+                                      cy={
+                                        point.y
+                                      }
                                       r="4"
                                       fill="#1677ff"
                                     />
@@ -777,8 +907,12 @@ const AdminDashboard = () => {
                                   return (
                                     <circle
                                       key={`active-${index}`}
-                                      cx={point.x}
-                                      cy={point.y}
+                                      cx={
+                                        point.x
+                                      }
+                                      cy={
+                                        point.y
+                                      }
                                       r="4"
                                       fill="#16a765"
                                     />
@@ -802,9 +936,13 @@ const AdminDashboard = () => {
                               index
                             ) => (
                               <span
-                                key={index}
+                                key={
+                                  index
+                                }
                               >
-                                {label}
+                                {
+                                  label
+                                }
                               </span>
                             )
                           )}
@@ -819,26 +957,35 @@ const AdminDashboard = () => {
               <section className="rounded-xl border border-gray-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
 
                 <div className="flex items-center justify-between px-6 pb-2 pt-7">
-                  <h2 className="text-[20px] font-semibold text-[#111827]">
-                    Recent Activity
-                  </h2>
+                  <div>
+                    <h2 className="text-[20px] font-semibold text-[#111827]">
+                      Recent Activity
+                    </h2>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowAllActivity(
-                        true
-                      )
-                    }
-                    className="cursor-pointer text-[15px] font-medium text-blue-600 transition hover:text-blue-700"
-                  >
-                    View All
-                  </button>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Latest platform activities
+                    </p>
+                  </div>
+
+                  {displayedActivities.length >
+                    0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowAllActivity(
+                          true
+                        )
+                      }
+                      className="cursor-pointer text-[15px] font-medium text-blue-600 transition hover:text-blue-700"
+                    >
+                      View All
+                    </button>
+                  )}
                 </div>
 
                 <div className="px-6">
 
-                  {displayedActivities.length ===
+                  {dashboardActivities.length ===
                   0 ? (
                     <div className="flex min-h-[300px] items-center justify-center">
                       <p className="text-sm text-gray-400">
@@ -846,69 +993,66 @@ const AdminDashboard = () => {
                       </p>
                     </div>
                   ) : (
-                    displayedActivities
-                      .slice(0, 5)
-                      .map(
-                        (
-                          item,
-                          index
-                        ) => {
-                          const Icon =
-                            item.icon;
+                    dashboardActivities.map(
+                      (
+                        item,
+                        index
+                      ) => {
+                        const Icon =
+                          item.icon;
 
-                          return (
+                        return (
+                          <div
+                            key={
+                              item._id ||
+                              item.id ||
+                              `${item.title}-${index}`
+                            }
+                            className={`flex items-center gap-4 py-5 ${
+                              index !==
+                              dashboardActivities.length -
+                                1
+                                ? "border-b border-gray-100"
+                                : ""
+                            }`}
+                          >
                             <div
-                              key={
-                                item._id ||
-                                item.id ||
-                                `${item.title}-${index}`
-                              }
-                              className={`flex items-center gap-4 py-5 ${
-                                index !==
-                                Math.min(
-                                  displayedActivities.length,
-                                  5
-                                ) -
-                                  1
-                                  ? "border-b border-gray-100"
-                                  : ""
-                              }`}
+                              className={`flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full ${item.bg}`}
                             >
-                              <div
-                                className={`flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full ${item.bg}`}
-                              >
-                                <Icon
-                                  size={23}
-                                  strokeWidth={
-                                    1.8
-                                  }
-                                  className={
-                                    item.color
-                                  }
-                                />
-                              </div>
-
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-[15px] font-semibold text-[#111827]">
-                                  {item.title ||
-                                    "Activity"}
-                                </p>
-
-                                <p className="mt-1 truncate text-[14px] text-gray-500">
-                                  {item.subtitle ||
-                                    item.description ||
-                                    ""}
-                                </p>
-                              </div>
-
-                              <span className="shrink-0 text-[13px] text-gray-500">
-                                {item.time ||
-                                  ""}
-                              </span>
+                              <Icon
+                                size={
+                                  23
+                                }
+                                strokeWidth={
+                                  1.8
+                                }
+                                className={
+                                  item.color
+                                }
+                              />
                             </div>
-                          );
-                        }
-                      )
+
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[15px] font-semibold text-[#111827]">
+                                {item.title ||
+                                  "Activity"}
+                              </p>
+
+                              <p className="mt-1 truncate text-[14px] text-gray-500">
+                                {item.subtitle ||
+                                  item.description ||
+                                  ""}
+                              </p>
+                            </div>
+
+                            <span className="shrink-0 text-[13px] text-gray-500">
+                              {item.time ||
+                                ""}
+                            </span>
+                          </div>
+                        );
+                      }
+                    )
                   )}
 
                 </div>
@@ -922,34 +1066,37 @@ const AdminDashboard = () => {
       {showAllActivity && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm"
-          onClick={() =>
-            setShowAllActivity(false)
+          onClick={
+            closeActivityModal
           }
         >
           <div
-            className="max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
-            onClick={(e) =>
-              e.stopPropagation()
+            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(event) =>
+              event.stopPropagation()
             }
           >
 
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5">
               <div>
                 <h2 className="text-xl font-semibold text-[#111827]">
-                  Recent Activity
+                  All Recent Activity
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  Latest activity across the platform
+                  {displayedActivities.length}{" "}
+                  {displayedActivities.length ===
+                  1
+                    ? "activity"
+                    : "activities"}{" "}
+                  found
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  setShowAllActivity(
-                    false
-                  )
+                onClick={
+                  closeActivityModal
                 }
                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
               >
@@ -957,7 +1104,7 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            <div className="max-h-[65vh] overflow-y-auto px-6">
+            <div className="min-h-0 flex-1 overflow-y-auto px-6">
 
               {displayedActivities.length ===
               0 ? (
@@ -980,7 +1127,7 @@ const AdminDashboard = () => {
                         key={
                           item._id ||
                           item.id ||
-                          `modal-${index}`
+                          `all-activity-${index}`
                         }
                         className={`flex items-center gap-4 py-5 ${
                           index !==
@@ -995,7 +1142,9 @@ const AdminDashboard = () => {
                         >
                           <Icon
                             size={22}
-                            strokeWidth={1.8}
+                            strokeWidth={
+                              1.8
+                            }
                             className={
                               item.color
                             }
@@ -1030,10 +1179,8 @@ const AdminDashboard = () => {
             <div className="border-t border-gray-200 px-6 py-4">
               <button
                 type="button"
-                onClick={() =>
-                  setShowAllActivity(
-                    false
-                  )
+                onClick={
+                  closeActivityModal
                 }
                 className="w-full cursor-pointer rounded-lg bg-gray-100 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
               >

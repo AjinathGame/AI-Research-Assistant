@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import AdminNavbar from "../../components/admin/AdminNavbar.jsx";
 import Footer from "../../components/Home/Footer";
+import ConfirmModal from "../../components/common/ConfirmModal";
 
 const AdminUserDetails = () => {
     const [users, setUsers] = useState([]);
@@ -28,6 +29,14 @@ const AdminUserDetails = () => {
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        type: "",
+        user: null,
+    });
+
+    const [actionLoading, setActionLoading] = useState(false);
 
     const USERS_PER_PAGE = 10;
 
@@ -298,95 +307,116 @@ const AdminUserDetails = () => {
         }
     };
 
-    const handleToggleUserStatus = async (
-        user
-    ) => {
-        const newStatus = !user.isActive;
+    const openStatusModal = (user) => {
+        setError("");
 
-        const action = newStatus
-            ? "activate"
-            : "deactivate";
-
-        const confirmAction =
-            window.confirm(
-                `Are you sure you want to ${action} ${user.name}?`
-            );
-
-        if (!confirmAction) {
-            return;
-        }
-
-        try {
-            await updateUserStatus(
-                user._id,
-                newStatus
-            );
-
-            setUsers((prevUsers) =>
-                prevUsers.map((item) =>
-                    item._id === user._id
-                        ? {
-                              ...item,
-                              isActive:
-                                  newStatus,
-                          }
-                        : item
-                )
-            );
-        } catch (error) {
-            console.error(
-                "Update User Status Error:",
-                error
-            );
-
-            window.alert(
-                error.message ||
-                    "Failed to update user status"
-            );
-        }
+        setConfirmModal({
+            isOpen: true,
+            type: user.isActive
+                ? "deactivate"
+                : "activate",
+            user,
+        });
     };
 
-    const handleDeleteUser = async (user) => {
-        const confirmDelete =
-            window.confirm(
-                `Are you sure you want to delete ${user.name}?`
-            );
+    const openDeleteModal = (user) => {
+        setError("");
 
-        if (!confirmDelete) {
+        setConfirmModal({
+            isOpen: true,
+            type: "delete",
+            user,
+        });
+    };
+
+    const closeConfirmModal = () => {
+        if (actionLoading) {
+            return;
+        }
+
+        setConfirmModal({
+            isOpen: false,
+            type: "",
+            user: null,
+        });
+    };
+
+    const handleConfirmAction = async () => {
+        const { type, user } = confirmModal;
+
+        if (!user || !type) {
             return;
         }
 
         try {
-            await deleteUser(user._id);
-
-            setUsers((prevUsers) =>
-                prevUsers.filter(
-                    (item) =>
-                        item._id !== user._id
-                )
-            );
+            setActionLoading(true);
+            setError("");
 
             if (
-                currentUsers.length === 1 &&
-                currentPage > 1
+                type === "activate" ||
+                type === "deactivate"
             ) {
-                setPage((prevPage) =>
-                    Math.max(
-                        1,
-                        prevPage - 1
+                const newStatus =
+                    type === "activate";
+
+                await updateUserStatus(
+                    user._id,
+                    newStatus
+                );
+
+                setUsers((prevUsers) =>
+                    prevUsers.map((item) =>
+                        item._id === user._id
+                            ? {
+                                  ...item,
+                                  isActive:
+                                      newStatus,
+                              }
+                            : item
                     )
                 );
             }
+
+            if (type === "delete") {
+                await deleteUser(user._id);
+
+                setUsers((prevUsers) =>
+                    prevUsers.filter(
+                        (item) =>
+                            item._id !== user._id
+                    )
+                );
+
+                if (
+                    currentUsers.length === 1 &&
+                    currentPage > 1
+                ) {
+                    setPage((prevPage) =>
+                        Math.max(
+                            1,
+                            prevPage - 1
+                        )
+                    );
+                }
+            }
+
+            setConfirmModal({
+                isOpen: false,
+                type: "",
+                user: null,
+            });
         } catch (error) {
             console.error(
-                "Delete User Error:",
+                "Admin User Action Error:",
                 error
             );
 
-            window.alert(
+            setError(
                 error.message ||
-                    "Failed to delete user"
+                    "Something went wrong. Please try again."
             );
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -471,10 +501,7 @@ const AdminUserDetails = () => {
 
                                     <p className="text-sm text-slate-600">
                                         <span className="font-semibold text-green-600">
-                                            {
-                                                activePercentage
-                                            }
-                                            %
+                                            {activePercentage}%
                                         </span>{" "}
                                         of total
                                     </p>
@@ -502,10 +529,7 @@ const AdminUserDetails = () => {
 
                                     <p className="text-sm text-slate-600">
                                         <span className="font-semibold text-orange-500">
-                                            {
-                                                inactivePercentage
-                                            }
-                                            %
+                                            {inactivePercentage}%
                                         </span>{" "}
                                         of total
                                     </p>
@@ -576,11 +600,9 @@ const AdminUserDetails = () => {
                                     <option>
                                         All Roles
                                     </option>
-
                                     <option>
                                         User
                                     </option>
-
                                     <option>
                                         Admin
                                     </option>
@@ -605,11 +627,9 @@ const AdminUserDetails = () => {
                                     <option>
                                         All Statuses
                                     </option>
-
                                     <option>
                                         Active
                                     </option>
-
                                     <option>
                                         Inactive
                                     </option>
@@ -806,7 +826,7 @@ const AdminUserDetails = () => {
                                                                     <button
                                                                         type="button"
                                                                         onClick={() =>
-                                                                            handleToggleUserStatus(
+                                                                            openStatusModal(
                                                                                 user
                                                                             )
                                                                         }
@@ -839,7 +859,7 @@ const AdminUserDetails = () => {
                                                                     <button
                                                                         type="button"
                                                                         onClick={() =>
-                                                                            handleDeleteUser(
+                                                                            openDeleteModal(
                                                                                 user
                                                                             )
                                                                         }
@@ -977,6 +997,53 @@ const AdminUserDetails = () => {
             </div>
 
             <Footer />
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={closeConfirmModal}
+                onConfirm={handleConfirmAction}
+                title={
+                    confirmModal.type === "delete"
+                        ? "Delete User"
+                        : confirmModal.type === "activate"
+                        ? "Activate User"
+                        : "Deactivate User"
+                }
+                message={
+                    confirmModal.type === "delete"
+                        ? `Are you sure you want to permanently delete ${
+                              confirmModal.user?.name || "this user"
+                          }? This action cannot be undone.`
+                        : confirmModal.type === "activate"
+                        ? `Are you sure you want to activate ${
+                              confirmModal.user?.name || "this user"
+                          }? This user will regain access to the application.`
+                        : `Are you sure you want to deactivate ${
+                              confirmModal.user?.name || "this user"
+                          }? This user will no longer be able to access the application.`
+                }
+                confirmText={
+                    confirmModal.type === "delete"
+                        ? "Delete User"
+                        : confirmModal.type === "activate"
+                        ? "Activate"
+                        : "Deactivate"
+                }
+                type={
+                    confirmModal.type === "delete"
+                        ? "danger"
+                        : confirmModal.type === "activate"
+                        ? "activate"
+                        : "deactivate"
+                }
+                loading={actionLoading}
+                itemName={
+                    confirmModal.user?.name || ""
+                }
+                itemEmail={
+                    confirmModal.user?.email || ""
+                }
+            />
         </>
     );
 };
