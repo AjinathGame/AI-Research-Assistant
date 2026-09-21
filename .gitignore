@@ -1,0 +1,27 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Environment files
+.env
+**/.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# RAG vector database
+backend/chroma_db/
+
+# Uploaded PDFs / runtime storage
+backend/storage/uploads/
+
+# ZIP backups
+*.zip
+
+# Logs
+*.log
+
+# Build output
+dist/
+**/dist/

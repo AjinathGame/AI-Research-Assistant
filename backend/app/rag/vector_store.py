@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
@@ -30,6 +31,8 @@ def add_chunks(chunks: List[Dict[str, Any]]) -> int:
     if not chunks:
         return 0
 
+    total_start = time.perf_counter()
+
     documents = []
     ids = []
     metadatas = []
@@ -50,9 +53,13 @@ def add_chunks(chunks: List[Dict[str, Any]]) -> int:
             "page": chunk["page"],
         })
 
+    embedding_start = time.perf_counter()
+
     embeddings = embed_texts(documents)
 
     batch_size = 128
+
+    vector_start = time.perf_counter()
 
     for i in range(0, len(documents), batch_size):
         _collection.add(
@@ -62,17 +69,14 @@ def add_chunks(chunks: List[Dict[str, Any]]) -> int:
             metadatas=metadatas[i:i + batch_size],
         )
 
+    
+    total_time = time.perf_counter() - total_start
+
+ 
     return len(documents)
 
 
 def delete_pdf(pdf_id: str) -> int:
-    """
-    Delete all ChromaDB chunks belonging to a PDF.
-
-    Returns:
-        Number of deleted chunks.
-    """
-
     if not pdf_id:
         return 0
 
@@ -101,7 +105,10 @@ def delete_pdf(pdf_id: str) -> int:
         return len(ids)
 
     except Exception as error:
-        print(f"ChromaDB PDF deletion error: {error}")
+        print(
+            f"ChromaDB PDF deletion error: {error}",
+            flush=True
+        )
         raise
 
 
@@ -164,9 +171,17 @@ def search_chunks(
     if top_k <= 0:
         return []
 
+    total_start = time.perf_counter()
+
     user_id = str(user_id).strip()
 
+    embedding_start = time.perf_counter()
+
     query_embedding = embed_query(query)
+
+    embedding_time = time.perf_counter() - embedding_start
+
+    
 
     conditions = [
         {
@@ -191,9 +206,13 @@ def search_chunks(
             "$and": conditions
         }
 
+    chroma_start = time.perf_counter()
+
+    candidate_k = max(top_k * 3, top_k)
+
     result = _collection.query(
         query_embeddings=[query_embedding],
-        n_results=top_k,
+        n_results=candidate_k,
         where=where,
         include=[
             "documents",
@@ -202,7 +221,22 @@ def search_chunks(
         ],
     )
 
+    chroma_time = time.perf_counter() - chroma_start
+
+   
+
     if not result or not result.get("ids"):
+        print(
+            "RAG_HITS: 0",
+            flush=True
+        )
+
+        print(
+            f"RAG_RELEVANT_HITS: 0",
+            flush=True
+        )
+
+      
         return []
 
     ids = result["ids"][0]
@@ -225,14 +259,23 @@ def search_chunks(
         [[]]
     )[0]
 
-    results = []
+    
+
+    min_similarity = float(
+        os.environ.get(
+            "RAG_MIN_SIMILARITY",
+            "0.45"
+        )
+    )
+
+    filtered_results = []
 
     for i, chunk_id in enumerate(ids):
 
         distance = (
             float(distances[i])
             if i < len(distances)
-            else 0.0
+            else 1.0
         )
 
         similarity = max(
@@ -246,13 +289,21 @@ def search_chunks(
             else {}
         )
 
-        results.append({
+        if similarity < min_similarity:
+            continue
+
+        text = (
+            documents[i]
+            if i < len(documents)
+            else ""
+        )
+
+        if not text or not text.strip():
+            continue
+
+        filtered_results.append({
             "id": chunk_id,
-            "text": (
-                documents[i]
-                if i < len(documents)
-                else ""
-            ),
+            "text": text,
             "pdf_id": metadata.get("pdf_id"),
             "pdf_name": metadata.get("filename"),
             "page": metadata.get("page"),
@@ -261,4 +312,24 @@ def search_chunks(
             "score": round(similarity, 4),
         })
 
-    return results
+    unique_results = []
+
+    seen_pages = set()
+
+    for item in filtered_results:
+
+        page_key = (
+            str(item.get("pdf_id")),
+            str(item.get("page"))
+        )
+
+        if page_key in seen_pages:
+            continue
+
+        seen_pages.add(page_key)
+
+        unique_results.append(item)
+
+       
+
+    return unique_results

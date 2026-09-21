@@ -1,4 +1,5 @@
 from typing import Dict, Any, List, Optional
+import time
 
 from app.rag.pdf_loader import extract_pages
 from app.rag.text_cleaner import clean_pages
@@ -35,21 +36,33 @@ def index_pdf(
     if not folder_id:
         raise ValueError("Folder ID is required")
 
+    total_start = time.perf_counter()
+
+    start = time.perf_counter()
+
     pages = extract_pages(file_path)
 
+   
+
     if not pages:
-        raise ValueError(
-            "No readable text found in PDF"
-        )
+        raise ValueError("No readable text found in PDF")
+
+    start = time.perf_counter()
 
     cleaned_pages = clean_pages(pages)
+
+
 
     if not cleaned_pages:
         raise ValueError(
             "No usable text found after cleaning"
         )
 
+    start = time.perf_counter()
+
     chunks = chunk_pages(cleaned_pages)
+
+    
 
     if not chunks:
         raise ValueError(
@@ -70,10 +83,18 @@ def index_pdf(
             "text": chunk["text"],
         })
 
+    start = time.perf_counter()
+
     stored_count = add_chunks(
         chunks_for_store
     )
 
+
+    total_time = (
+        time.perf_counter() - total_start
+    )
+
+  
     return {
         "status": "completed",
         "pdf_id": pdf_id,
@@ -105,6 +126,10 @@ def ask_question(
             "User ID is required"
         )
 
+    total_start = time.perf_counter()
+
+    retrieve_start = time.perf_counter()
+
     hits = retrieve(
         query=question,
         user_id=user_id,
@@ -113,33 +138,83 @@ def ask_question(
         top_k=top_k,
     )
 
-    if not hits:
-        return {
-            "answer": (
-                "The answer is not available "
-                "in the selected folder."
-            ),
-            "sources": [],
-        }
-
-    answer = generate_answer(
-        question=question,
-        hits=hits,
+    retrieve_time = (
+        time.perf_counter() - retrieve_start
     )
 
-    sources = []
+    
+
+    sources: List[Dict[str, Any]] = []
+
+    seen_sources = set()
 
     for hit in hits:
+
+        pdf_id = hit.get("pdf_id")
+        page = hit.get("page")
+
+        source_key = (
+            str(pdf_id),
+            str(page)
+        )
+
+        if source_key in seen_sources:
+            continue
+
+        seen_sources.add(source_key)
+
         sources.append({
-            "pdf_id": hit.get("pdf_id"),
+            "pdf_id": pdf_id,
             "pdf_name": hit.get("pdf_name"),
-            "page": hit.get("page"),
+            "page": page,
             "technology_id": hit.get("technology_id"),
             "folder_id": hit.get("folder_id"),
             "score": hit.get("score"),
         })
 
+    if not hits:
+
+        total_time = (
+            time.perf_counter() - total_start
+        )
+
+        return {
+            "answer": (
+                "The uploaded documents do not contain "
+                "enough information to answer this question."
+            ),
+            "sources": [],
+            "webSources": [],
+        }
+
+    generate_start = time.perf_counter()
+
+    generation_result = generate_answer(
+        question=question,
+        hits=hits,
+    )
+
+    generate_time = (
+        time.perf_counter() - generate_start
+    )
+
+    
+    answer = generation_result.get(
+        "answer",
+        "No answer was generated."
+    )
+
+    web_sources = generation_result.get(
+        "webSources",
+        []
+    )
+
+    total_time = (
+        time.perf_counter() - total_start
+    )
+
     return {
         "answer": answer,
         "sources": sources,
+        "webSources": web_sources,
     }

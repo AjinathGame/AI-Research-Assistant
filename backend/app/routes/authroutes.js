@@ -64,13 +64,15 @@ router.get(
   (req, res) => {
     return res.status(200).json({
       success: true,
-      message:
-        "Protected API accessed successfully",
+      message: "Protected API accessed successfully",
       user: {
         id: req.user._id,
         name: req.user.name,
         email: req.user.email,
         role: req.user.role,
+        authProvider: req.user.authProvider,
+        isVerified: req.user.isVerified,
+        isActive: req.user.isActive,
       },
     });
   }

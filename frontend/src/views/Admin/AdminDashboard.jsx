@@ -82,9 +82,7 @@ const AdminDashboard = () => {
 
         if (activityResponse.success) {
           setActivity(
-            Array.isArray(
-              activityResponse.data
-            )
+            Array.isArray(activityResponse.data)
               ? activityResponse.data
               : []
           );
@@ -157,8 +155,7 @@ const AdminDashboard = () => {
       value: loading
         ? "..."
         : Number(
-            dashboardData.totalTechnologies ||
-              0
+            dashboardData.totalTechnologies || 0
           ).toLocaleString(),
       text: "2 new this week",
       icon: Layers3,
@@ -182,8 +179,7 @@ const AdminDashboard = () => {
       value: loading
         ? "..."
         : Number(
-            dashboardData.totalQuestions ||
-              0
+            dashboardData.totalQuestions || 0
           ).toLocaleString(),
       text: "320 this week",
       icon: CircleHelp,
@@ -192,21 +188,68 @@ const AdminDashboard = () => {
     },
   ];
 
-  const newUsers = Array.isArray(
+  const dailyNewUsers = Array.isArray(
     usersOverview.newUsers
   )
-    ? usersOverview.newUsers.map(Number)
+    ? usersOverview.newUsers.map((value) =>
+        Math.max(Number(value) || 0, 0)
+      )
     : [];
 
   const activeUsers = Array.isArray(
     usersOverview.activeUsers
   )
-    ? usersOverview.activeUsers.map(Number)
+    ? usersOverview.activeUsers.map((value) =>
+        Math.max(Number(value) || 0, 0)
+      )
     : [];
 
+  const totalUsers = Math.max(
+    Number(dashboardData.totalUsers) || 0,
+    0
+  );
+
+  const newUsersInPeriod =
+    dailyNewUsers.reduce(
+      (total, value) => total + value,
+      0
+    );
+
+  const startingUsers = Math.max(
+    totalUsers - newUsersInPeriod,
+    0
+  );
+
+  const cumulativeUsers =
+    dailyNewUsers.length > 0
+      ? dailyNewUsers.reduce(
+          (result, value, index) => {
+            const previousValue =
+              index === 0
+                ? startingUsers
+                : result[index - 1];
+
+            result.push(
+              previousValue + value
+            );
+
+            return result;
+          },
+          []
+        )
+      : [];
+
+  const chartUsers =
+    cumulativeUsers.length > 0
+      ? cumulativeUsers
+      : totalUsers > 0
+      ? [totalUsers]
+      : [];
+
   const maxDataValue = Math.max(
-    ...newUsers,
+    ...chartUsers,
     ...activeUsers,
+    totalUsers,
     0
   );
 
@@ -295,16 +338,10 @@ const AdminDashboard = () => {
   const getChartLabels = () => {
     const now = new Date();
 
-    if (
-      selectedPeriod === "3months"
-    ) {
+    if (selectedPeriod === "3months") {
       const labels = [];
 
-      for (
-        let i = 0;
-        i < 3;
-        i++
-      ) {
+      for (let i = 0; i < 3; i++) {
         const date = new Date(
           now.getFullYear(),
           now.getMonth() - 2 + i,
@@ -351,16 +388,10 @@ const AdminDashboard = () => {
       return labels;
     }
 
-    let year =
-      now.getFullYear();
+    let year = now.getFullYear();
+    let month = now.getMonth();
 
-    let month =
-      now.getMonth();
-
-    if (
-      selectedPeriod ===
-      "lastMonth"
-    ) {
+    if (selectedPeriod === "lastMonth") {
       month--;
 
       if (month < 0) {
@@ -408,21 +439,14 @@ const AdminDashboard = () => {
   const chartLabels =
     getChartLabels();
 
-  const getActivityIcon = (
-    type
-  ) => {
+  const getActivityIcon = (type) => {
     const normalizedType =
       String(type || "")
         .toLowerCase()
-        .replace(
-          /[-\s]/g,
-          "_"
-        );
+        .replace(/[-\s]/g, "_");
 
     if (
-      normalizedType.includes(
-        "login"
-      )
+      normalizedType.includes("login")
     ) {
       return {
         icon: LogIn,
@@ -432,12 +456,8 @@ const AdminDashboard = () => {
     }
 
     if (
-      normalizedType.includes(
-        "register"
-      ) ||
-      normalizedType.includes(
-        "signup"
-      ) ||
+      normalizedType.includes("register") ||
+      normalizedType.includes("signup") ||
       normalizedType.includes(
         "user_created"
       )
@@ -450,12 +470,8 @@ const AdminDashboard = () => {
     }
 
     if (
-      normalizedType.includes(
-        "pdf"
-      ) ||
-      normalizedType.includes(
-        "upload"
-      ) ||
+      normalizedType.includes("pdf") ||
+      normalizedType.includes("upload") ||
       normalizedType.includes(
         "document"
       )
@@ -471,9 +487,7 @@ const AdminDashboard = () => {
       normalizedType.includes(
         "question"
       ) ||
-      normalizedType.includes(
-        "ask"
-      )
+      normalizedType.includes("ask")
     ) {
       return {
         icon: HelpCircle,
@@ -495,12 +509,8 @@ const AdminDashboard = () => {
     }
 
     if (
-      normalizedType.includes(
-        "delete"
-      ) ||
-      normalizedType.includes(
-        "remove"
-      )
+      normalizedType.includes("delete") ||
+      normalizedType.includes("remove")
     ) {
       return {
         icon: Trash2,
@@ -510,9 +520,7 @@ const AdminDashboard = () => {
     }
 
     if (
-      normalizedType.includes(
-        "active"
-      )
+      normalizedType.includes("active")
     ) {
       return {
         icon: UserCheck,
@@ -528,13 +536,9 @@ const AdminDashboard = () => {
     };
   };
 
-  const getActivityData = (
-    item
-  ) => {
+  const getActivityData = (item) => {
     const fallback =
-      getActivityIcon(
-        item?.type
-      );
+      getActivityIcon(item?.type);
 
     return {
       ...item,
@@ -549,15 +553,10 @@ const AdminDashboard = () => {
   };
 
   const displayedActivities =
-    activity.map(
-      getActivityData
-    );
+    activity.map(getActivityData);
 
   const dashboardActivities =
-    displayedActivities.slice(
-      0,
-      5
-    );
+    displayedActivities.slice(0, 5);
 
   const closeActivityModal = () => {
     setShowAllActivity(false);
@@ -591,63 +590,50 @@ const AdminDashboard = () => {
             )}
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-              {stats.map(
-                (stat) => {
-                  const Icon =
-                    stat.icon;
+              {stats.map((stat) => {
+                const Icon = stat.icon;
 
-                  return (
-                    <div
-                      key={
-                        stat.title
-                      }
-                      className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-[0_2px_8px_rgba(15,23,42,0.04)]"
-                    >
-                      <div className="flex items-start gap-5">
-                        <div
-                          className={`flex h-[60px] w-[74px] shrink-0 items-center justify-center rounded-xl ${stat.iconBg}`}
-                        >
-                          <Icon
-                            size={38}
-                            strokeWidth={
-                              1.8
-                            }
-                            className={
-                              stat.iconColor
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <p className="text-[16px] font-medium text-[#263650]">
-                            {
-                              stat.title
-                            }
-                          </p>
-
-                          <h2 className="mt-2 text-[31px] font-bold leading-none text-[#111827]">
-                            {
-                              stat.value
-                            }
-                          </h2>
-                        </div>
+                return (
+                  <div
+                    key={stat.title}
+                    className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-[0_2px_8px_rgba(15,23,42,0.04)]"
+                  >
+                    <div className="flex items-start gap-5">
+                      <div
+                        className={`flex h-[60px] w-[74px] shrink-0 items-center justify-center rounded-xl ${stat.iconBg}`}
+                      >
+                        <Icon
+                          size={38}
+                          strokeWidth={1.8}
+                          className={
+                            stat.iconColor
+                          }
+                        />
                       </div>
 
-                      <div className="mt-6 flex items-center gap-2">
-                        <span className="text-[25px] leading-none text-emerald-500">
-                          ↑
-                        </span>
+                      <div>
+                        <p className="text-[16px] font-medium text-[#263650]">
+                          {stat.title}
+                        </p>
 
-                        <span className="text-[15px] text-[#40516b]">
-                          {
-                            stat.text
-                          }
-                        </span>
+                        <h2 className="mt-2 text-[31px] font-bold leading-none text-[#111827]">
+                          {stat.value}
+                        </h2>
                       </div>
                     </div>
-                  );
-                }
-              )}
+
+                    <div className="mt-6 flex items-center gap-2">
+                      <span className="text-[25px] leading-none text-emerald-500">
+                        ↑
+                      </span>
+
+                      <span className="text-[15px] text-[#40516b]">
+                        {stat.text}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-7 grid grid-cols-1 gap-6 xl:grid-cols-[1.55fr_1fr]">
@@ -742,7 +728,7 @@ const AdminDashboard = () => {
                     <span className="h-3 w-3 rounded-full bg-blue-600" />
 
                     <span className="text-[#263650]">
-                      New Users
+                      Total Users
                     </span>
                   </div>
 
@@ -762,29 +748,24 @@ const AdminDashboard = () => {
 
                       <div className="flex w-[45px] shrink-0 flex-col justify-between pb-[42px] pt-[12px] text-xs text-gray-500">
                         <span>
-                          {
-                            chartMax
-                          }
+                          {chartMax}
                         </span>
 
                         <span>
                           {Math.round(
-                            chartMax *
-                              0.75
+                            chartMax * 0.75
                           )}
                         </span>
 
                         <span>
                           {Math.round(
-                            chartMax *
-                              0.5
+                            chartMax * 0.5
                           )}
                         </span>
 
                         <span>
                           {Math.round(
-                            chartMax *
-                              0.25
+                            chartMax * 0.25
                           )}
                         </span>
 
@@ -798,9 +779,7 @@ const AdminDashboard = () => {
                         <div className="absolute bottom-[42px] left-0 right-0 top-[12px]">
 
                           {[0, 1, 2, 3, 4].map(
-                            (
-                              line
-                            ) => (
+                            (line) => (
                               <div
                                 key={`horizontal-${line}`}
                                 className="absolute left-0 right-0 border-t border-dashed border-gray-200"
@@ -812,9 +791,7 @@ const AdminDashboard = () => {
                           )}
 
                           {[0, 1, 2, 3, 4, 5, 6].map(
-                            (
-                              line
-                            ) => (
+                            (line) => (
                               <div
                                 key={`vertical-${line}`}
                                 className="absolute bottom-0 top-0 border-l border-dashed border-gray-200"
@@ -825,20 +802,18 @@ const AdminDashboard = () => {
                             )
                           )}
 
-                          {newUsers.length >
-                            0 ||
-                          activeUsers.length >
-                            0 ? (
+                          {chartUsers.length > 0 ||
+                          activeUsers.length > 0 ? (
                             <svg
                               viewBox={`0 0 ${chartWidth} ${chartHeight}`}
                               className="absolute inset-0 h-full w-full overflow-visible"
                               preserveAspectRatio="none"
                             >
-                              {newUsers.length >
-                                0 && (
+
+                              {chartUsers.length > 0 && (
                                 <polyline
                                   points={createPoints(
-                                    newUsers
+                                    chartUsers
                                   )}
                                   fill="none"
                                   stroke="#1677ff"
@@ -849,8 +824,7 @@ const AdminDashboard = () => {
                                 />
                               )}
 
-                              {activeUsers.length >
-                                0 && (
+                              {activeUsers.length > 0 && (
                                 <polyline
                                   points={createPoints(
                                     activeUsers
@@ -864,7 +838,7 @@ const AdminDashboard = () => {
                                 />
                               )}
 
-                              {newUsers.map(
+                              {chartUsers.map(
                                 (
                                   value,
                                   index
@@ -873,18 +847,14 @@ const AdminDashboard = () => {
                                     getPoint(
                                       value,
                                       index,
-                                      newUsers
+                                      chartUsers
                                     );
 
                                   return (
                                     <circle
-                                      key={`new-${index}`}
-                                      cx={
-                                        point.x
-                                      }
-                                      cy={
-                                        point.y
-                                      }
+                                      key={`total-${index}`}
+                                      cx={point.x}
+                                      cy={point.y}
                                       r="4"
                                       fill="#1677ff"
                                     />
@@ -907,12 +877,8 @@ const AdminDashboard = () => {
                                   return (
                                     <circle
                                       key={`active-${index}`}
-                                      cx={
-                                        point.x
-                                      }
-                                      cy={
-                                        point.y
-                                      }
+                                      cx={point.x}
+                                      cy={point.y}
                                       r="4"
                                       fill="#16a765"
                                     />
@@ -936,13 +902,9 @@ const AdminDashboard = () => {
                               index
                             ) => (
                               <span
-                                key={
-                                  index
-                                }
+                                key={index}
                               >
-                                {
-                                  label
-                                }
+                                {label}
                               </span>
                             )
                           )}
@@ -1020,12 +982,8 @@ const AdminDashboard = () => {
                               className={`flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full ${item.bg}`}
                             >
                               <Icon
-                                size={
-                                  23
-                                }
-                                strokeWidth={
-                                  1.8
-                                }
+                                size={23}
+                                strokeWidth={1.8}
                                 className={
                                   item.color
                                 }
@@ -1066,9 +1024,7 @@ const AdminDashboard = () => {
       {showAllActivity && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm"
-          onClick={
-            closeActivityModal
-          }
+          onClick={closeActivityModal}
         >
           <div
             className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
@@ -1095,9 +1051,7 @@ const AdminDashboard = () => {
 
               <button
                 type="button"
-                onClick={
-                  closeActivityModal
-                }
+                onClick={closeActivityModal}
                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
               >
                 <X size={20} />
@@ -1142,9 +1096,7 @@ const AdminDashboard = () => {
                         >
                           <Icon
                             size={22}
-                            strokeWidth={
-                              1.8
-                            }
+                            strokeWidth={1.8}
                             className={
                               item.color
                             }
@@ -1179,9 +1131,7 @@ const AdminDashboard = () => {
             <div className="border-t border-gray-200 px-6 py-4">
               <button
                 type="button"
-                onClick={
-                  closeActivityModal
-                }
+                onClick={closeActivityModal}
                 className="w-full cursor-pointer rounded-lg bg-gray-100 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
               >
                 Close

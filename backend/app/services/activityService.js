@@ -18,8 +18,6 @@ export const createActivity = async ({
       entityType,
     });
 
-    console.log("Activity created:", activity._id);
-
     return activity;
   } catch (error) {
     console.error("Activity creation error:", error);

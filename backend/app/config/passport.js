@@ -1,6 +1,7 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as GitHubStrategy } from "passport-github2";
+
 import User from "../models/auth.js";
 
 console.log(
@@ -39,9 +40,6 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
-      authorizationParams: {
-        prompt: "select_account",
-      },
     },
     async (
       accessToken,
@@ -50,22 +48,25 @@ passport.use(
       done
     ) => {
       try {
+        console.log("========== GOOGLE AUTH ==========");
+
         const googleId = profile.id;
 
         const name =
           profile.displayName || "Google User";
 
         const email =
-          profile.emails?.[0]?.value?.toLowerCase();
+          profile.emails?.[0]?.value?.toLowerCase().trim();
 
-        console.log("Google Login Callback");
         console.log("Google ID:", googleId);
         console.log("Google Name:", name);
         console.log("Google Email:", email);
 
         if (!email) {
           return done(
-            new Error("Google email not available"),
+            new Error(
+              "Google email not available"
+            ),
             null
           );
         }
@@ -88,7 +89,10 @@ passport.use(
             password: null,
             authProvider: "google",
             providerId: googleId,
+            role: "user",
             isVerified: true,
+            isActive: true,
+            lastLoginAt: new Date(),
           });
 
           console.log(
@@ -96,23 +100,28 @@ passport.use(
             user.email
           );
         } else {
-          user.name = name;
-          user.email = email;
-
           if (!user.googleId) {
             user.googleId = googleId;
           }
 
+          if (!user.providerId) {
+            user.providerId = googleId;
+          }
+
           user.authProvider = "google";
-          user.providerId = googleId;
           user.isVerified = true;
+          user.lastLoginAt = new Date();
 
           await user.save();
 
           console.log(
-            "Existing Google user updated:",
-            user.name,
+            "Existing Google account linked:",
             user.email
+          );
+
+          console.log(
+            "Existing user role preserved:",
+            user.role
           );
         }
 
@@ -135,6 +144,7 @@ passport.use(
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
       callbackURL: process.env.GITHUB_CALLBACK_URL,
+      scope: ["user:email"],
     },
     async (
       accessToken,
@@ -143,6 +153,8 @@ passport.use(
       done
     ) => {
       try {
+        console.log("========== GITHUB AUTH ==========");
+
         const githubId = profile.id;
 
         const name =
@@ -151,9 +163,10 @@ passport.use(
           "GitHub User";
 
         const email =
-          profile.emails?.[0]?.value?.toLowerCase();
+          profile.emails?.[0]?.value
+            ?.toLowerCase()
+            .trim();
 
-        console.log("GitHub Login Callback");
         console.log("GitHub ID:", githubId);
         console.log("GitHub Name:", name);
         console.log("GitHub Email:", email);
@@ -161,7 +174,7 @@ passport.use(
         if (!email) {
           return done(
             new Error(
-              "GitHub email not available. Please make your email public on GitHub."
+              "GitHub email not available. Please allow email access."
             ),
             null
           );
@@ -185,7 +198,10 @@ passport.use(
             password: null,
             authProvider: "github",
             providerId: githubId,
+            role: "user",
             isVerified: true,
+            isActive: true,
+            lastLoginAt: new Date(),
           });
 
           console.log(
@@ -193,23 +209,28 @@ passport.use(
             user.email
           );
         } else {
-          user.name = name;
-          user.email = email;
-
           if (!user.githubId) {
             user.githubId = githubId;
           }
 
+          if (!user.providerId) {
+            user.providerId = githubId;
+          }
+
           user.authProvider = "github";
-          user.providerId = githubId;
           user.isVerified = true;
+          user.lastLoginAt = new Date();
 
           await user.save();
 
           console.log(
-            "Existing GitHub user updated:",
-            user.name,
+            "Existing GitHub account linked:",
             user.email
+          );
+
+          console.log(
+            "Existing user role preserved:",
+            user.role
           );
         }
 

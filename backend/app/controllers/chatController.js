@@ -1,5 +1,5 @@
 import { askQuestion } from "../services/rag_Service.js";
-import ChatHistory from "../models/chatHistory.js";
+import ChatHistory from "../models/ChatHistory.js";
 import Question from "../models/Question.js";
 import { createActivity } from "../services/activityService.js";
 
@@ -42,57 +42,77 @@ export const askChatQuestion = async (req, res) => {
       });
     }
 
-    const startTime = Date.now();
+   const startTime = Date.now();
 
-    const result = await askQuestion({
-      question: question.trim(),
-      userId: String(userId),
-      technologyId: String(technologyId),
-      folderId: String(folderId),
-      topK: Number(topK) || 5,
-    });
+console.time("RAG_TOTAL");
 
-    const responseTime =
-      (Date.now() - startTime) / 1000;
+console.time("RAG_ASK_QUESTION");
 
-    const answer =
-      typeof result?.answer === "string"
-        ? result.answer.trim()
-        : "";
+const result = await askQuestion({
+  question: question.trim(),
+  userId: String(userId),
+  technologyId: String(technologyId),
+  folderId: String(folderId),
+  topK: Number(topK) || 5,
+});
 
-    const status = answer
-      ? "Answered"
-      : "Pending";
+console.timeEnd("RAG_ASK_QUESTION");
 
-    const savedQuestion = await Question.create({
-      userId,
-      question: question.trim(),
-      answer,
-      status,
-      responseTime,
-      technologyId,
-      folderId,
-    });
+const responseTime =
+  (Date.now() - startTime) / 1000;
 
-    await ChatHistory.create({
-      userId,
-      question: question.trim(),
-      answer,
-      technologyId,
-      folderId,
-      sources: Array.isArray(result?.sources)
-        ? result.sources
-        : [],
-    });
+console.time("DB_SAVE_QUESTION");
 
-    await createActivity({
-      type: "question_asked",
-      title: "Question asked",
-      description: question.trim(),
-      userId,
-      entityId: savedQuestion._id,
-      entityType: "Question",
-    });
+const answer =
+  typeof result?.answer === "string"
+    ? result.answer.trim()
+    : "";
+
+const status = answer
+  ? "Answered"
+  : "Pending";
+
+const savedQuestion = await Question.create({
+  userId,
+  question: question.trim(),
+  answer,
+  status,
+  responseTime,
+  technologyId,
+  folderId,
+});
+
+console.timeEnd("DB_SAVE_QUESTION");
+
+console.time("DB_SAVE_CHAT_HISTORY");
+
+await ChatHistory.create({
+  userId,
+  question: question.trim(),
+  answer,
+  technologyId,
+  folderId,
+  sources: Array.isArray(result?.sources)
+    ? result.sources
+    : [],
+});
+
+console.timeEnd("DB_SAVE_CHAT_HISTORY");
+
+console.time("DB_SAVE_ACTIVITY");
+
+await createActivity({
+  type: "question_asked",
+  title: "Question asked",
+  description: question.trim(),
+  userId,
+  entityId: savedQuestion._id,
+  entityType: "Question",
+});
+
+console.timeEnd("DB_SAVE_ACTIVITY");
+
+console.timeEnd("RAG_TOTAL");
 
     return res.status(200).json({
       success: true,

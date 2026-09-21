@@ -10,9 +10,7 @@ def build_prompt(
         raise ValueError("Question cannot be empty")
 
     if not hits:
-        return (
-            "No relevant information was found in the uploaded documents."
-        )
+        return ""
 
     context_blocks = []
 
@@ -22,87 +20,82 @@ def build_prompt(
         page = hit.get("page") or "Unknown"
         text = hit.get("text") or ""
 
-        context_blocks.append(
-            f"""
-SOURCE {i}
-PDF: {pdf_name}
-PAGE: {page}
+        if not text.strip():
+            continue
 
-CONTENT:
-{text}
-"""
+        context_blocks.append(
+            f"PDF Source {i}\n"
+            f"PDF: {pdf_name}\n"
+            f"Page: {page}\n"
+            f"Content:\n{text}"
         )
 
-    context = "\n\n-------------------------\n\n".join(context_blocks)
+    if not context_blocks:
+        return ""
+
+    pdf_context = "\n\n---\n\n".join(context_blocks)
 
     prompt = f"""
-You are an intelligent AI research assistant working inside a
-document-based Retrieval-Augmented Generation (RAG) system.
+You are an AI research assistant that answers questions
+strictly from the user's uploaded PDF documents.
 
-Your task is to answer the user's question using the retrieved
-information from the uploaded research documents.
-
-IMPORTANT INSTRUCTIONS:
-
-1. Do NOT copy sentences directly from the source documents.
-
-2. Understand the retrieved information first and generate a
-   NEW answer in your own words.
-
-3. Combine information from multiple retrieved sources when
-   appropriate.
-
-4. You may explain, compare, summarize, organize, and logically
-   connect the information found in the sources.
-
-5. You may provide examples only when they are supported by the
-   retrieved context or are simple illustrative examples that
-   do not introduce new factual claims.
-
-6. Do NOT use external knowledge, internet knowledge, or information
-   that is not supported by the retrieved documents.
-
-7. Do NOT invent facts, statistics, research results, names,
-   dates, or technical claims.
-
-8. If the retrieved documents do not contain enough information
-   to answer the question, clearly say:
-   "The uploaded documents do not contain enough information
-   to answer this question."
-
-9. Do not mention "context", "retrieved chunks", "vector database",
-   "embeddings", or internal RAG processing in the final answer.
-
-10. Write the answer naturally as if you already understood the
-    research material.
-
-11. For detailed questions, structure the answer using:
-    - Short introduction
-    - Main points
-    - Examples where supported
-    - Short conclusion
-
-12. Cite the relevant source after each important claim using:
-    [Source 1], [Source 2], etc.
-
-13. The answer should be a synthesized explanation, NOT a
-    copy-paste or paragraph-by-paragraph summary.
-
-========================
-RETRIEVED RESEARCH DATA
-========================
-
-{context}
-
-========================
-USER QUESTION
-========================
-
+USER QUESTION:
 {question}
 
-========================
-GENERATE THE ANSWER
-========================
+UPLOADED PDF SOURCES:
+{pdf_context}
+
+STRICT RULES:
+
+1. Answer ONLY using information explicitly present
+   in the uploaded PDF sources above.
+
+2. Do NOT use your own general knowledge.
+
+3. Do NOT assume information that is not present
+   in the PDF sources.
+
+4. Do NOT infer an answer merely because the question
+   is related to the general topic of the PDF.
+
+5. If the PDF sources do not contain enough information
+   to answer the question, respond EXACTLY with:
+
+"The uploaded documents do not contain enough information
+to answer this question."
+
+6. Do not provide a partial answer from general knowledge
+   when the required information is missing from the PDFs.
+
+7. Synthesize information from the relevant PDF sources
+   in your own words.
+
+8. Do not copy long sentences directly from the sources.
+
+9. Every important factual claim must be supported by
+   one or more PDF sources.
+
+10. Use citations in this format:
+
+[PDF Source 1]
+[PDF Source 2]
+
+11. Do not create fake citations.
+
+12. Do not mention embeddings, vector databases,
+    retrieval, chunks, prompts, RAG, or internal processing.
+
+13. Keep the answer directly related to the user's question.
+
+14. For detailed questions, use headings, bullet points,
+    examples, or step-by-step explanations when supported
+    by the PDF sources.
+
+15. If the question asks for information that is not
+    available in the uploaded PDFs, use the exact
+    insufficient-information response given above.
+
+GENERATE THE ANSWER:
 """
 
     return prompt

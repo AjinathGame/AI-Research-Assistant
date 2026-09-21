@@ -1,6 +1,12 @@
 import crypto from "crypto";
+import fs from "fs";
 import bcrypt from "bcryptjs";
+
 import User from "../models/auth.js";
+import Pdf from "../models/Pdf.js";
+import ChatHistory from "../models/ChatHistory.js";
+import Folder from "../models/Folder.js";
+
 import { sendResetPasswordEmail } from "../utils/sendEmail.js";
 
 export const forgotPassword = async (req, res) => {
@@ -54,7 +60,6 @@ export const forgotPassword = async (req, res) => {
       message:
         "Password reset email sent successfully",
     });
-
   } catch (error) {
     console.error(
       "Forgot password error:",
@@ -116,8 +121,6 @@ export const resetPassword = async (req, res) => {
     );
 
     user.password = hashedPassword;
-
-    // Remove reset token after successful reset
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
 
@@ -128,7 +131,6 @@ export const resetPassword = async (req, res) => {
       message:
         "Password reset successfully",
     });
-
   } catch (error) {
     console.error(
       "Reset password error:",

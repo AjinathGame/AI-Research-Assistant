@@ -42,6 +42,8 @@ const chatHistorySchema = new mongoose.Schema(
   }
 );
 
-const ChatHistory = mongoose.model("ChatHistory", chatHistorySchema);
+const ChatHistory =
+  mongoose.models.ChatHistory ||
+  mongoose.model("ChatHistory", chatHistorySchema);
 
 export default ChatHistory;

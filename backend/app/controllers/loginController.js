@@ -45,7 +45,7 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "This account uses Google/GitHub login. Please continue with your social account.",
+          "This account was created with Google/GitHub. Please use Forgot Password to set a password before using email login.",
       });
     }
 
