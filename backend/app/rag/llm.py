@@ -2,7 +2,6 @@ from typing import List, Dict, Any
 import time
 
 from google import genai
-from google.genai import types
 
 from app.config.settings import (
     GEMINI_API_KEY,
@@ -15,6 +14,9 @@ from app.rag.prompt import build_prompt
 client = genai.Client(
     api_key=GEMINI_API_KEY
 )
+
+
+MAX_RETRIES = 3
 
 
 def generate_answer(
@@ -41,11 +43,12 @@ def generate_answer(
         hits=hits
     )
 
-    prompt_time = time.perf_counter() - prompt_start
+    prompt_time = (
+        time.perf_counter() - prompt_start
+    )
 
     print(
-        f"RAG_PROMPT_BUILD: "
-        f"{prompt_time:.3f}s",
+        f"RAG_PROMPT_BUILD: {prompt_time:.3f}s",
         flush=True
     )
 
@@ -58,48 +61,108 @@ def generate_answer(
             "webSources": []
         }
 
-   
-    try:
+    for attempt in range(1, MAX_RETRIES + 1):
 
-        gemini_start = time.perf_counter()
+        try:
 
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.2
-            )
-        )
+            gemini_start = time.perf_counter()
 
-        gemini_time = (
-            time.perf_counter() - gemini_start
-        )
-
-       
-        answer = response.text
-
-        if not answer:
-            answer = (
-                "The uploaded documents do not contain enough "
-                "information to answer this question."
+            interaction = client.interactions.create(
+                model=GEMINI_MODEL,
+                input=prompt,
+                generation_config={
+        "thinking_level": "low"
+    }
             )
 
-        return {
-            "answer": answer.strip(),
-            "webSources": []
-        }
+            gemini_time = (
+                time.perf_counter() - gemini_start
+            )
 
-    except Exception as error:
+            print(
+                f"GEMINI_GENERATION: "
+                f"{gemini_time:.3f}s "
+                f"(attempt {attempt})",
+                flush=True
+            )
 
-        
+            answer = interaction.output_text
 
-        if "429" in str(error):
+            if not answer:
+                answer = (
+                    "The uploaded documents do not contain enough "
+                    "information to answer this question."
+                )
+
+            return {
+                "answer": answer.strip(),
+                "webSources": []
+            }
+
+        except Exception as error:
+
+            error_text = str(error)
+
+            print(
+                f"GEMINI_ERROR: "
+                f"attempt {attempt}/{MAX_RETRIES}: "
+                f"{error_text}",
+                flush=True
+            )
+
+            lower_error = error_text.lower()
+
+            if (
+                "429" in error_text
+                or "quota" in lower_error
+                or "resource_exhausted" in lower_error
+            ):
+
+                raise RuntimeError(
+                    "Gemini API quota has been reached. "
+                    "Please try again later."
+                ) from error
+
+            if (
+                "503" in error_text
+                or "unavailable" in lower_error
+                or "high demand" in lower_error
+            ):
+
+                if attempt < MAX_RETRIES:
+
+                    wait_time = 2 ** attempt
+
+                    print(
+                        f"GEMINI_RETRY: "
+                        f"waiting {wait_time}s before retry...",
+                        flush=True
+                    )
+
+                    time.sleep(wait_time)
+
+                    continue
+
+                raise RuntimeError(
+                    "Gemini is temporarily unavailable. "
+                    "Please try again in a few seconds."
+                ) from error
+
+            if (
+                "404" in error_text
+                or "not_found" in lower_error
+            ):
+
+                raise RuntimeError(
+                    f"Gemini model '{GEMINI_MODEL}' "
+                    "is not available for this API key."
+                ) from error
 
             raise RuntimeError(
-                "Gemini API quota exceeded. "
-                "Please check your Gemini API quota."
+                "Failed to generate answer using Gemini."
             ) from error
 
-        raise RuntimeError(
-            "Failed to generate answer using Gemini"
-        ) from error
+    raise RuntimeError(
+        "Gemini is temporarily unavailable. "
+        "Please try again in a few seconds."
+    )

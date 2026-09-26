@@ -153,7 +153,7 @@ const startWorker = () => {
       rejectAllPending(
         new Error(
           error.message ||
-            "Python RAG worker failed"
+          "Python RAG worker failed"
         )
       );
 
@@ -230,15 +230,11 @@ const handleWorkerResult = (
   }
 };
 
-const handleWorkerError = (
-  jsonText
-) => {
+const handleWorkerError = (jsonText) => {
   try {
-    const response =
-      JSON.parse(jsonText);
+    const response = JSON.parse(jsonText);
 
-    const requestId =
-      response.requestId;
+    const requestId = response.requestId;
 
     if (!requestId) {
       console.error(
@@ -249,10 +245,7 @@ const handleWorkerError = (
       return;
     }
 
-    const pending =
-      pendingRequests.get(
-        requestId
-      );
+    const pending = pendingRequests.get(requestId);
 
     if (!pending) {
       console.warn(
@@ -263,16 +256,36 @@ const handleWorkerError = (
       return;
     }
 
-    pendingRequests.delete(
-      requestId
-    );
+    pendingRequests.delete(requestId);
 
-    pending.reject(
-      new Error(
-        response.message ||
-          "Python RAG worker error"
+    let message =
+      response.message ||
+      "Failed to process your request.";
+
+    const lowerMessage = message.toLowerCase();
+
+    if (
+      lowerMessage.includes("gemini") &&
+      (
+        lowerMessage.includes("503") ||
+        lowerMessage.includes("unavailable") ||
+        lowerMessage.includes("high demand")
       )
-    );
+    ) {
+      message =
+        "The AI service is temporarily busy. Please try again in a few seconds.";
+    }
+
+    if (
+      lowerMessage.includes("quota") ||
+      lowerMessage.includes("429")
+    ) {
+      message =
+        "The AI service quota has been reached. Please try again later.";
+    }
+
+    pending.reject(new Error(message));
+
   } catch (error) {
     console.error(
       "Failed to parse worker error:",
@@ -280,7 +293,6 @@ const handleWorkerError = (
     );
   }
 };
-
 const rejectAllPending = (
   error
 ) => {
