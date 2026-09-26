@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PYTHON_PATH =
-  process.env.PYTHON_PATH || "python";
+  process.env.PYTHON_PATH ||
+  "C:\\Users\\Netizens\\AppData\\Local\\Python\\bin\\python.exe";
 
 const backendPath = path.resolve(
   __dirname,
